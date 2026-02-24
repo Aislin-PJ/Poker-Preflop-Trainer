@@ -1,0 +1,923 @@
+:root {
+    --bg-color: #0b1121;
+    --table-color: #0d4a30;
+    --table-border: #805b32;
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --text-primary: #ffffff;
+    --text-secondary: #a0aec0;
+
+    --color-fold: #e53e3e;
+    --color-call: #3182ce;
+    --color-raise: #38a169;
+
+    --font-primary: 'Inter', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: radial-gradient(circle at center, #1a202c 0%, var(--bg-color) 100%);
+    color: var(--text-primary);
+    font-family: var(--font-primary);
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
+    overflow-x: hidden;
+    overflow-y: auto;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    transition: background 0.5s ease;
+}
+
+/* Theme Variations */
+body.theme-rfi {
+    --table-color: #0d4a30;
+    --table-border: #805b32;
+    --bg-color: #0b1121;
+}
+
+body.theme-defend {
+    --table-color: #1a365d;
+    --table-border: #2b6cb0;
+    --bg-color: #091324;
+}
+
+body.theme-pushfold {
+    --table-color: #4a1a1a;
+    --table-border: #c53030;
+    --bg-color: #210b0b;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 1200px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 8px 12px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    animation: slideIn 0.5s ease-out forwards;
+}
+
+.glassmorphism {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* =====================
+   HEADER
+   ===================== */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.header h1 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    background: linear-gradient(90deg, #63b3ed, #9f7aea);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.btn-icon {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    min-width: 36px;
+    min-height: 36px;
+    touch-action: manipulation;
+}
+
+.btn-icon:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.mode-select {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-family: var(--font-primary);
+    outline: none;
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    max-width: 140px;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.mode-select option {
+    background: var(--bg-color);
+    color: var(--text-primary);
+}
+
+.stats {
+    display: flex;
+    gap: 12px;
+}
+
+.stat-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stat-box .label {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.stat-box .value {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* =====================
+   MAIN LAYOUT
+   ===================== */
+.main-layout {
+    display: flex;
+    gap: 16px;
+    flex: 1;
+}
+
+/* =====================
+   GAME AREA
+   ===================== */
+.game-area {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 2;
+    justify-content: center;
+}
+
+/* =====================
+   STRATEGY COACH SIDEBAR
+   ===================== */
+.strategy-coach {
+    flex: 1;
+    min-width: 260px;
+    max-width: 340px;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.strategy-coach h2 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 10px;
+}
+
+#coach-badge {
+    font-size: 0.75rem;
+    padding: 3px 7px;
+    border-radius: 4px;
+    background: var(--color-call);
+    color: #fff;
+}
+
+.coach-content {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+.coach-content h3 {
+    color: var(--text-primary);
+    margin: 12px 0 4px 0;
+    font-size: 1rem;
+}
+
+.coach-content ul {
+    list-style-position: inside;
+    margin-bottom: 12px;
+}
+
+.coach-content li {
+    margin-bottom: 6px;
+}
+
+/* =====================
+   SCENARIO PANEL
+   ===================== */
+.scenario-panel {
+    padding: 12px 16px;
+    text-align: center;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.scenario-panel h2 {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.scenario-panel p {
+    font-size: 1.1rem;
+    font-weight: 400;
+    padding-right: 70px; /* prevent overlap with position badge */
+}
+
+.position-badge {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #63b3ed;
+    border: 1px solid rgba(99, 179, 237, 0.3);
+    white-space: nowrap;
+}
+
+/* =====================
+   TABLE
+   ===================== */
+.table {
+    width: 100%;
+    flex-grow: 1;
+    min-height: 150px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    perspective: 1000px;
+}
+
+.table-surface {
+    width: 90%;
+    aspect-ratio: 2.2 / 1;
+    max-height: 340px;
+    background: var(--table-color);
+    border-radius: 200px;
+    border: 12px solid var(--table-border);
+    box-shadow:
+        inset 0 0 50px rgba(0, 0, 0, 0.5),
+        0 20px 50px rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    transform: rotateX(20deg);
+    transition: background 0.5s ease, border-color 0.5s ease;
+}
+
+/* =====================
+   CARDS
+   ===================== */
+.cards-container {
+    display: flex;
+    gap: 12px;
+    transform: rotateX(-20deg) translateY(15px);
+}
+
+.card {
+    width: clamp(50px, 10vw, 80px);
+    height: clamp(75px, 15vw, 120px);
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: clamp(1.2rem, 3.5vw, 2rem);
+    font-weight: bold;
+    color: #1a202c;
+    position: relative;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+.card:hover {
+    transform: translateY(-8px);
+}
+
+.card.empty {
+    background: repeating-linear-gradient(45deg,
+            #2d3748,
+            #2d3748 10px,
+            #4a5568 10px,
+            #4a5568 20px);
+    border: 2px solid #fff;
+}
+
+.card .suit {
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.card.red {
+    color: #e53e3e;
+}
+
+.card.black {
+    color: #1a202c;
+}
+
+/* =====================
+   CONTROLS / ACTION BUTTONS
+   ===================== */
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 12px;
+}
+
+.btn {
+    flex: 1;
+    max-width: 160px;
+    padding: 14px 0;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    touch-action: manipulation;
+    min-height: 48px; /* accessible tap target */
+}
+
+.btn:active {
+    transform: scale(0.95);
+}
+
+.btn-fold {
+    background: var(--color-fold);
+}
+
+.btn-fold:hover {
+    background: #c53030;
+    box-shadow: 0 0 15px rgba(229, 62, 62, 0.5);
+}
+
+.btn-call {
+    background: var(--color-call);
+}
+
+.btn-call:hover {
+    background: #2b6cb0;
+    box-shadow: 0 0 15px rgba(49, 130, 206, 0.5);
+}
+
+.btn-raise {
+    background: var(--color-raise);
+}
+
+.btn-raise:hover {
+    background: #2f855a;
+    box-shadow: 0 0 15px rgba(56, 161, 105, 0.5);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* =====================
+   FEEDBACK OVERLAY
+   ===================== */
+.feedback {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(11, 17, 33, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    padding: 28px 24px;
+    border-radius: 16px;
+    text-align: center;
+    z-index: 10;
+    width: 90%;
+    max-width: 380px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.feedback.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.feedback h3 {
+    font-size: 1.7rem;
+    margin-bottom: 10px;
+}
+
+.feedback.success h3 {
+    color: #48bb78;
+}
+
+.feedback.error h3 {
+    color: #f56565;
+}
+
+.feedback p {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    line-height: 1.5;
+    font-size: 0.95rem;
+}
+
+.btn-next {
+    background: #fff;
+    color: #1a202c;
+    width: 100%;
+}
+
+.btn-next:hover {
+    background: #e2e8f0;
+}
+
+/* =====================
+   ANIMATIONS
+   ===================== */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =====================
+   MODAL
+   ===================== */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    transition: opacity 0.3s, visibility 0.3s;
+    padding: 12px;
+    overflow-y: auto;
+}
+
+.modal.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.modal-content {
+    background: var(--bg-color);
+    width: 100%;
+    max-width: 500px;
+    padding: 18px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-large {
+    max-width: 600px;
+}
+
+.modal-body {
+    overflow-y: auto;
+    padding-right: 8px;
+    line-height: 1.6;
+}
+
+.modal-body h3 {
+    color: #63b3ed;
+    margin-top: 14px;
+    margin-bottom: 5px;
+    font-size: 1rem;
+}
+
+.modal-body p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+}
+
+.modal-body ul {
+    list-style-position: inside;
+    margin-bottom: 12px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.modal-body li {
+    margin-bottom: 6px;
+}
+
+.modal-body strong {
+    color: var(--text-primary);
+}
+
+.rankings-list {
+    list-style-type: decimal;
+}
+
+.suit-red {
+    color: #e53e3e;
+    font-size: 1.1em;
+}
+
+.suit-black {
+    color: #a0aec0;
+    font-size: 1.1em;
+}
+
+.svg-container {
+    width: 100%;
+    margin: 12px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.position-svg {
+    width: 100%;
+    max-width: 360px;
+    height: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 10px;
+}
+
+.modal-header h2 {
+    font-size: 1.1rem;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    touch-action: manipulation;
+}
+
+/* =====================
+   RANGE CHART
+   ===================== */
+.chart-grid {
+    display: grid;
+    grid-template-columns: repeat(13, 1fr);
+    grid-gap: 2px;
+}
+
+.chart-cell {
+    aspect-ratio: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: clamp(0.45rem, 1.5vw, 0.7rem);
+    font-weight: 600;
+    color: #fff;
+    border-radius: 2px;
+    user-select: none;
+}
+
+.chart-cell.fold {
+    background: #e53e3e;
+    color: white;
+}
+
+.chart-cell.raise {
+    background: var(--color-raise);
+}
+
+.chart-cell.defend-call {
+    background: #3182ce;
+    color: white;
+}
+
+.chart-cell.highlight {
+    border: 2px solid yellow;
+    box-shadow: 0 0 10px yellow;
+    z-index: 2;
+}
+
+.chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+}
+
+.color-box {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.color-box.raise {
+    background: var(--color-raise);
+}
+
+.color-box.fold {
+    background: #e53e3e;
+}
+
+/* =====================
+   RESPONSIVE BREAKPOINTS
+   ===================== */
+
+/* --- Tablet and below (≤ 900px) --- */
+@media (max-width: 900px) {
+    .main-layout {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .strategy-coach {
+        min-width: unset;
+        max-width: unset;
+        flex: none;
+        max-height: 280px;
+    }
+
+    .game-area {
+        flex: none;
+    }
+
+    .table-surface {
+        max-height: 280px;
+        border-width: 10px;
+    }
+}
+
+/* --- Small tablet / large phone (≤ 600px) --- */
+@media (max-width: 600px) {
+    .app-container {
+        padding: 6px 8px 16px;
+        gap: 6px;
+    }
+
+    .header {
+        padding: 10px 12px;
+        gap: 6px;
+    }
+
+    .header h1 {
+        font-size: 0.95rem;
+    }
+
+    .header-right {
+        gap: 6px;
+    }
+
+    .mode-select {
+        font-size: 0.75rem;
+        padding: 7px 8px;
+        max-width: 120px;
+    }
+
+    .btn-icon {
+        padding: 6px;
+        min-width: 34px;
+        min-height: 34px;
+    }
+
+    .btn-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .stats {
+        gap: 10px;
+    }
+
+    .stat-box .label {
+        font-size: 0.6rem;
+    }
+
+    .stat-box .value {
+        font-size: 1rem;
+    }
+
+    .scenario-panel {
+        padding: 10px 14px;
+    }
+
+    .scenario-panel p {
+        font-size: 0.95rem;
+        padding-right: 64px;
+    }
+
+    .position-badge {
+        font-size: 0.75rem;
+        padding: 3px 8px;
+        top: 10px;
+        right: 10px;
+    }
+
+    .table {
+        min-height: 120px;
+    }
+
+    .table-surface {
+        max-height: 200px;
+        border-width: 8px;
+        width: 95%;
+    }
+
+    .cards-container {
+        gap: 8px;
+    }
+
+    .controls {
+        padding: 10px 8px;
+        gap: 8px;
+    }
+
+    .btn {
+        font-size: 0.85rem;
+        padding: 12px 4px;
+        letter-spacing: 0.5px;
+    }
+
+    .strategy-coach {
+        max-height: 220px;
+        padding: 12px;
+    }
+
+    .strategy-coach h2 {
+        font-size: 1rem;
+    }
+
+    .coach-content {
+        font-size: 0.85rem;
+    }
+
+    .feedback {
+        padding: 20px 16px;
+        width: 92%;
+    }
+
+    .feedback h3 {
+        font-size: 1.4rem;
+    }
+
+    .feedback p {
+        font-size: 0.85rem;
+    }
+}
+
+/* --- Very small phone (≤ 380px) --- */
+@media (max-width: 380px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .header h1 {
+        font-size: 0.9rem;
+    }
+
+    .header-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .mode-select {
+        flex: 1;
+        max-width: none;
+        font-size: 0.7rem;
+    }
+
+    .btn {
+        font-size: 0.78rem;
+        padding: 11px 2px;
+        min-height: 44px;
+    }
+
+    .table-surface {
+        max-height: 160px;
+    }
+
+    .strategy-coach {
+        max-height: 180px;
+    }
+
+    .chart-cell {
+        font-size: 0.4rem;
+    }
+}
+
+/* --- Landscape phone  --- */
+@media (max-height: 500px) and (orientation: landscape) {
+    body {
+        align-items: flex-start;
+    }
+
+    .app-container {
+        padding: 4px 8px 8px;
+        gap: 6px;
+        min-height: unset;
+    }
+
+    .header {
+        padding: 6px 12px;
+    }
+
+    .table {
+        min-height: 100px;
+    }
+
+    .table-surface {
+        max-height: 160px;
+        border-width: 8px;
+    }
+
+    .main-layout {
+        flex-direction: row;
+        gap: 10px;
+    }
+
+    .strategy-coach {
+        flex: 1;
+        min-width: 200px;
+        max-width: 240px;
+        max-height: none;
+    }
+
+    .controls {
+        padding: 8px;
+    }
+
+    .btn {
+        padding: 10px 0;
+        font-size: 0.85rem;
+    }
+}

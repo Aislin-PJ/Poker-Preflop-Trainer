@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker Preflop Trainer</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css?family=Inter:300,400,600,700" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header / Stats -->
+        <header class="header glassmorphism">
+            <h1 data-i18n="appTitle">Poker Preflop Trainer</h1>
+            <div class="header-right">
+                <button class="btn-icon mode-select" onclick="toggleLanguage()" id="lang-toggle"
+                    style="font-weight:bold; width: 44px;">繁</button>
+                <select id="mode-selector" class="mode-select" onchange="changeMode(this.value)">
+                    <option value="RFI" data-i18n="modeRFI">Mode: RFI (Open)</option>
+                    <option value="DEFEND" data-i18n="modeDefend">Mode: Facing Raise</option>
+                    <option value="PUSH_FOLD" data-i18n="modePushFold">Mode: Push / Fold</option>
+                </select>
+                <button class="btn-icon" onclick="toggleInfoModal()" title="Poker Rules & Info">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                </button>
+                <button class="btn-icon" onclick="toggleChartModal()" title="View UTG Chart">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <path d="M3 9h18" />
+                        <path d="M9 21V9" />
+                    </svg>
+                </button>
+                <div class="stats">
+                    <div class="stat-box">
+                        <span class="label" data-i18n="score">Score</span>
+                        <span class="value" id="score">0</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="label" data-i18n="streak">Streak</span>
+                        <span class="value" id="streak">0</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Layout with Coach Sidepanel -->
+        <main class="main-layout">
+            <!-- Left Side: Interactive Game Area -->
+            <div class="game-area">
+                <!-- Scenario Information -->
+                <div class="scenario-panel glassmorphism">
+                    <h2 data-i18n="scenarioTitle">Scenario</h2>
+                    <p id="scenario-text" data-i18n="waitingHand">Waiting for next hand...</p>
+                    <div class="position-badge" id="hero-position">UTG</div>
+                </div>
+
+                <!-- Poker Table Visualization -->
+                <div class="table">
+                    <div class="table-surface">
+                        <div class="cards-container" id="hole-cards">
+                            <!-- Cards injected by JS -->
+                            <div class="card empty"></div>
+                            <div class="card empty"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Controls -->
+                <div class="controls glassmorphism">
+                    <button class="btn btn-fold" id="btn-fold" onclick="handleAction('Fold')"
+                        data-i18n="btnFold">Fold</button>
+                    <button class="btn btn-call" id="btn-call" onclick="handleAction('Call')"
+                        data-i18n="btnCall">Call</button>
+                    <button class="btn btn-raise" id="btn-raise" onclick="handleAction('Raise')"
+                        data-i18n="btnRaise">Raise</button>
+                    <button class="btn btn-raise hidden" id="btn-allin" onclick="handleAction('All-In')"
+                        data-i18n="btnAllIn">All-In</button>
+                </div>
+
+                <!-- Feedback Overlay -->
+                <div id="feedback" class="feedback hidden">
+                    <h3 id="feedback-title">Correct!</h3>
+                    <p id="feedback-message">UTG with AA is a mandatory raise.</p>
+                    <button class="btn btn-next" onclick="nextHand()" data-i18n="nextHand">Next Hand</button>
+                </div>
+            </div>
+
+            <!-- Right Side: Strategy Coach -->
+            <aside id="strategy-coach" class="strategy-coach glassmorphism">
+                <h2><span data-i18n="coachTitle">Strategy Coach</span> <span class="badge" id="coach-badge">RFI</span>
+                </h2>
+                <div id="coach-content" class="coach-content">
+                    <p data-i18n="coachSelect">Select a mode to begin.</p>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Chart Modal -->
+        <div id="chart-modal" class="modal hidden">
+            <div class="modal-content glassmorphism">
+                <div class="modal-header">
+                    <h2 data-i18n="chartUtgRfiTitle">UTG Opening Range</h2>
+                    <button class="btn-close" onclick="toggleChartModal()">&times;</button>
+                </div>
+                <div id="chart-grid" class="chart-grid"></div>
+                <!-- Legend is injected dynamically via JS, no need to hardcode tags here -->
+            </div>
+        </div>
+
+        <!-- Info / Rules Modal -->
+        <div id="info-modal" class="modal hidden">
+            <div class="modal-content glassmorphism modal-large">
+                <div class="modal-header">
+                    <h2 data-i18n="rulesTitle">Poker Rules & Strategy</h2>
+                    <button class="btn-close" onclick="toggleInfoModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <h3 data-i18n="positionTitle">Position (Who acts when)</h3>
+                    <p data-i18n="positionDesc">In poker, the order of action rotates clockwise every hand. The later
+                        you act, the more
+                        information you have about what your opponents will do.</p>
+
+                    <div class="svg-container">
+                        <svg viewBox="0 0 400 250" class="position-svg">
+                            <!-- Table -->
+                            <rect x="50" y="50" width="300" height="150" rx="75" fill="#0d4a30" stroke="#805b32"
+                                stroke-width="8" />
+
+                            <!-- Seats -->
+                            <!-- Top Left: UTG -->
+                            <circle cx="100" cy="50" r="18" fill="#e53e3e" />
+                            <text x="100" y="55" fill="white" font-size="12" font-weight="bold"
+                                text-anchor="middle">UTG</text>
+
+                            <!-- Top Right: HJ -->
+                            <circle cx="300" cy="50" r="18" fill="#4a5568" />
+                            <text x="300" y="55" fill="white" font-size="12" font-weight="bold"
+                                text-anchor="middle">HJ</text>
+
+                            <!-- Far Right: CO -->
+                            <circle cx="350" cy="125" r="18" fill="#4a5568" />
+                            <text x="350" y="130" fill="white" font-size="12" font-weight="bold"
+                                text-anchor="middle">CO</text>
+
+                            <!-- Bottom Right: BTN -->
+                            <circle cx="300" cy="200" r="18" fill="#3182ce" />
+                            <text x="300" y="205" fill="white" font-size="12" font-weight="bold"
+                                text-anchor="middle">BTN</text>
+                            <!-- Dealer Button -->
+                            <circle cx="265" cy="180" r="8" fill="white" />
+                            <text x="265" y="183" fill="black" font-size="6" font-weight="bold"
+                                text-anchor="middle">D</text>
+
+                            <!-- Bottom Left: SB -->
+                            <circle cx="100" cy="200" r="18" fill="#718096" />
+                            <text x="100" y="205" fill="white" font-size="12" font-weight="bold"
+                                text-anchor="middle">SB</text>
+
+                            <!-- Far Left: BB -->
+                            <circle cx="50" cy="125" r="18" fill="#718096" />
+                            <text x="50" y="130" fill="white" font-size="12" font-weight="bold"
+                                text-anchor="middle">BB</text>
+
+                            <!-- Arrow indicating Action Flow -->
+                            <path d="M 125 35 Q 200 10 275 35" fill="none" stroke="rgba(255,255,255,0.3)"
+                                stroke-width="2" stroke-dasharray="5,5" marker-end="url(#arrowhead)" />
+                            <defs>
+                                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5"
+                                    orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255,255,255,0.3)" />
+                                </marker>
+                            </defs>
+                        </svg>
+                    </div>
+
+                    <ul>
+                        <li data-i18n="utgDesc"><strong>UTG (Under the Gun):</strong> Acts first. Has no information.
+                            Must play very strong
+                            hands (e.g. AA, KK, AKs).</li>
+                        <li data-i18n="hjCoDesc"><strong>HJ (Hijack) & CO (Cutoff):</strong> Middle/Late positions. Can
+                            play slightly weaker
+                            hands.</li>
+                        <li data-i18n="btnDesc"><strong>BTN (Button):</strong> Acts last post-flop. Most powerful
+                            position. Can play a very
+                            wide range of hands to steal the blinds.</li>
+                        <li data-i18n="sbBbDesc"><strong>SB (Small Blind) & BB (Big Blind):</strong> Forced to put money
+                            in before the cards
+                            are dealt, and have to act first post-flop.</li>
+                    </ul>
+
+                    <h3 data-i18n="preflopStratTitle">Preflop Strategy</h3>
+                    <p data-i18n="preflopStratDesc">When the action folds to you, you are deciding whether to
+                        <strong>Fold</strong> or <strong>Raise
+                            First In (RFI)</strong>. “Limping” (just calling the big blind) is generally a bad strategy
+                        for beginners. You should either raise to take control, or fold.</p>
+
+                    <h3 data-i18n="advStratTitle">Advanced Strategy Concepts (via PokerVIP)</h3>
+                    <ul>
+                        <li data-i18n="advUtgDesc"><strong>UTG Tightness:</strong> Being Under the Gun puts you at a
+                            severe informational
+                            disadvantage. You must play very a tight range because you face actions from the entire
+                            table behind you.</li>
+                        <li data-i18n="adv3BetDesc"><strong>Dealing with 3-Bets:</strong> A "3-Bet" is a re-raise
+                            preflop. If you open-raise
+                            from UTG and face a 3-bet, your opponent usually has a very strong hand. You must defend
+                            cautiously or 4-bet with premiums.</li>
+                        <li data-i18n="advImpliedDesc"><strong>Implied Odds:</strong> The money you expect to win
+                            <em>after</em> making a big hand
+                            (like hitting a Set with a pocket pair). Small pairs can sometimes call 3-bets if the
+                            opponent's stack is deep enough to pay you off when you hit.</li>
+                    </ul>
+
+                    <h3 data-i18n="handRanksTitle">Basic Hand Rankings (Strongest to Weakest)</h3>
+                    <ul class="rankings-list">
+                        <li data-i18n="rankRoyal"><strong>Royal Flush:</strong> A<span class="suit-red">♥</span> K<span
+                                class="suit-red">♥</span> Q<span class="suit-red">♥</span> J<span
+                                class="suit-red">♥</span> T<span class="suit-red">♥</span> (all same suit)</li>
+                        <li data-i18n="rankStrFlush"><strong>Straight Flush:</strong> 9<span class="suit-black">♠</span>
+                            8<span class="suit-black">♠</span> 7<span class="suit-black">♠</span> 6<span
+                                class="suit-black">♠</span> 5<span class="suit-black">♠</span> (in sequence, same suit)
+                        </li>
+                        <li data-i18n="rankQuads"><strong>Four of a Kind:</strong> Q<span class="suit-black">♠</span>
+                            Q<span class="suit-red">♥</span> Q<span class="suit-red">♦</span> Q<span
+                                class="suit-black">♣</span> 4<span class="suit-black">♠</span></li>
+                        <li data-i18n="rankBoat"><strong>Full House:</strong> K<span class="suit-black">♠</span> K<span
+                                class="suit-red">♥</span> K<span class="suit-black">♣</span> 2<span
+                                class="suit-red">♦</span> 2<span class="suit-black">♠</span> (three of a kind + pair)
+                        </li>
+                        <li data-i18n="rankFlush"><strong>Flush:</strong> Any five cards of the same suit.</li>
+                        <li data-i18n="rankStraight"><strong>Straight:</strong> 5 6 7 8 9 (in sequence, mixed suits)
+                        </li>
+                        <li data-i18n="rankTrips"><strong>Three of a Kind:</strong> 7 7 7 A 2</li>
+                        <li data-i18n="rankTwoPair"><strong>Two Pair:</strong> J J 9 9 4</li>
+                        <li data-i18n="rankPair"><strong>One Pair:</strong> A A 8 5 3</li>
+                        <li data-i18n="rankHigh"><strong>High Card:</strong> A K 9 5 2 (Highest card plays)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="i18n.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
