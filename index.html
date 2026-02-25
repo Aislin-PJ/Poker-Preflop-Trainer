@@ -3,8 +3,27 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Poker Preflop Trainer</title>
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0b1121">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PokerTrainer">
+    <link rel="apple-touch-icon" href="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/2660.svg">
+    <link rel="manifest" href="manifest.json">
+    <title>Poker Preflop Trainer — Free iOS App for Improving Preflop Strategy</title>
+    <meta name="description"
+        content="A free, premium Poker Preflop Trainer with RFI, Push/Fold, and Defense modes. Train with adaptive difficulty, track your stats, and install as a native iOS app.">
+    <meta name="keywords" content="poker trainer, preflop, RFI, push fold, GTO, range chart, strategy, poker study app">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Poker Preflop Trainer">
+    <meta property="og:description"
+        content="Master poker preflop strategy with adaptive difficulty and range editor. Free, offline-first PWA.">
+    <meta property="og:image" content="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/2660.svg">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Poker Preflop Trainer">
+    <meta name="twitter:description"
+        content="Master poker preflop strategy with adaptive difficulty and range editor. Free, offline-first PWA.">
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css?family=Inter:300,400,600,700" rel="stylesheet">
 </head>
@@ -19,37 +38,103 @@
                     style="font-weight:bold; width: 44px;">繁</button>
                 <select id="mode-selector" class="mode-select" onchange="changeMode(this.value)">
                     <option value="RFI" data-i18n="modeRFI">Mode: RFI (Open)</option>
-                    <option value="DEFEND" data-i18n="modeDefend">Mode: Facing Raise</option>
+                    <option value="DEFEND" data-i18n="modeDefend">Mode: Defense</option>
                     <option value="PUSH_FOLD" data-i18n="modePushFold">Mode: Push / Fold</option>
+                    <option value="CUSTOM" data-i18n="modeCustom">Mode: Custom Practice</option>
                 </select>
+                <!-- Info button -->
                 <button class="btn-icon" onclick="toggleInfoModal()" title="Poker Rules & Info">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10" />
                         <line x1="12" y1="16" x2="12" y2="12" />
                         <line x1="12" y1="8" x2="12.01" y2="8" />
                     </svg>
                 </button>
-                <button class="btn-icon" onclick="toggleChartModal()" title="View UTG Chart">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                <!-- Chart button -->
+                <button class="btn-icon" onclick="toggleChartModal()" title="View Range Chart">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2" />
                         <path d="M3 9h18" />
                         <path d="M9 21V9" />
                     </svg>
                 </button>
-                <div class="stats">
-                    <div class="stat-box">
-                        <span class="label" data-i18n="score">Score</span>
-                        <span class="value" id="score">0</span>
+                <!-- Stats button -->
+                <button class="btn-icon" onclick="openStatsModal()" title="Progress & Accuracy">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10" />
+                        <line x1="12" y1="20" x2="12" y2="4" />
+                        <line x1="6" y1="20" x2="6" y2="14" />
+                    </svg>
+                </button>
+                <!-- Range Editor button -->
+                <button class="btn-icon" onclick="openRangeEditor()" title="Range Editor">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="5" height="5" rx="1" />
+                        <rect x="10" y="3" width="5" height="5" rx="1" />
+                        <rect x="17" y="3" width="4" height="5" rx="1" />
+                        <rect x="3" y="10" width="5" height="5" rx="1" />
+                        <rect x="10" y="10" width="5" height="5" rx="1" />
+                        <rect x="17" y="10" width="4" height="5" rx="1" />
+                        <rect x="3" y="17" width="5" height="4" rx="1" />
+                        <rect x="10" y="17" width="5" height="4" rx="1" />
+                    </svg>
+                </button>
+                <div class="stats hud-stats">
+                    <div class="stat-box pill">
+                        <span class="stat-icon pulse-blue">🎯</span>
+                        <div class="stat-info">
+                            <span class="label" data-i18n="score">Score</span>
+                            <span class="value" id="score">0</span>
+                        </div>
                     </div>
-                    <div class="stat-box">
-                        <span class="label" data-i18n="streak">Streak</span>
-                        <span class="value" id="streak">0</span>
+                    <div class="stat-box pill">
+                        <span class="stat-icon pulse-orange">🔥</span>
+                        <div class="stat-info">
+                            <span class="label" data-i18n="streak">Streak</span>
+                            <span class="value" id="streak">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-box pill">
+                        <span class="stat-icon pulse-green">🃏</span>
+                        <div class="stat-info">
+                            <span class="label" data-i18n="lifetimeHands">Hands</span>
+                            <span class="value" id="lifetime-hands">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-box pill">
+                        <span class="stat-icon pulse-teal">📊</span>
+                        <div class="stat-info">
+                            <span class="label">Accuracy</span>
+                            <span class="value" id="accuracy-hud">—</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </header>
+
+        <!-- Stack Size Selector (Push/Fold only) -->
+        <div id="stack-selector" class="stack-selector glassmorphism hidden">
+            <span class="stack-label" data-i18n="stackLabel">Stack:</span>
+            <div class="stack-btns">
+                <button class="stack-btn" data-stack="6" onclick="setStack(6)">6bb</button>
+                <button class="stack-btn" data-stack="8" onclick="setStack(8)">8bb</button>
+                <button class="stack-btn active" data-stack="10" onclick="setStack(10)">10bb</button>
+                <button class="stack-btn" data-stack="12" onclick="setStack(12)">12bb</button>
+                <button class="stack-btn" data-stack="15" onclick="setStack(15)">15bb</button>
+            </div>
+        </div>
+
+        <!-- Custom Mode Range Selector -->
+        <div id="custom-mode-controls" class="stack-selector glassmorphism hidden">
+            <span class="stack-label">Range:</span>
+            <div class="stack-btns" id="custom-range-picker-list">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
 
         <!-- Main Layout with Coach Sidepanel -->
         <main class="main-layout">
@@ -66,7 +151,6 @@
                 <div class="table">
                     <div class="table-surface">
                         <div class="cards-container" id="hole-cards">
-                            <!-- Cards injected by JS -->
                             <div class="card empty"></div>
                             <div class="card empty"></div>
                         </div>
@@ -84,12 +168,14 @@
                     <button class="btn btn-raise hidden" id="btn-allin" onclick="handleAction('All-In')"
                         data-i18n="btnAllIn">All-In</button>
                 </div>
+                <div class="kbd-hint" data-i18n="kbdHint">F · C · R · A keys</div>
 
                 <!-- Feedback Overlay -->
                 <div id="feedback" class="feedback hidden">
+                    <span class="feedback-icon" id="feedback-icon"></span>
                     <h3 id="feedback-title">Correct!</h3>
                     <p id="feedback-message">UTG with AA is a mandatory raise.</p>
-                    <button class="btn btn-next" onclick="nextHand()" data-i18n="nextHand">Next Hand</button>
+                    <button class="btn btn-next" onclick="nextHand()" data-i18n="nextHand">Next Hand ·Space·</button>
                 </div>
             </div>
 
@@ -100,22 +186,28 @@
                 <div id="coach-content" class="coach-content">
                     <p data-i18n="coachSelect">Select a mode to begin.</p>
                 </div>
+
+                <!-- Hand History -->
+                <div class="hand-history-section">
+                    <div class="hand-history-header" onclick="this.parentElement.classList.toggle('expanded')">
+                        <span data-i18n="handHistoryTitle">Hand History</span>
+                        <span class="history-toggle-icon">▾</span>
+                    </div>
+                    <div id="hand-history-list" class="hand-history-list">
+                        <p class="history-empty">No hands yet.</p>
+                    </div>
+                </div>
             </aside>
         </main>
 
-        <!-- Chart Modal -->
+        <!-- ===================== CHART MODAL ===================== -->
         <div id="chart-modal" class="modal hidden">
             <div class="modal-content glassmorphism">
-                <div class="modal-header">
-                    <h2 data-i18n="chartUtgRfiTitle">UTG Opening Range</h2>
-                    <button class="btn-close" onclick="toggleChartModal()">&times;</button>
-                </div>
-                <div id="chart-grid" class="chart-grid"></div>
-                <!-- Legend is injected dynamically via JS, no need to hardcode tags here -->
+                <!-- Injected by JS: header + pos tabs + grid + legend -->
             </div>
         </div>
 
-        <!-- Info / Rules Modal -->
+        <!-- ===================== INFO / RULES MODAL ===================== -->
         <div id="info-modal" class="modal hidden">
             <div class="modal-content glassmorphism modal-large">
                 <div class="modal-header">
@@ -125,51 +217,26 @@
                 <div class="modal-body">
                     <h3 data-i18n="positionTitle">Position (Who acts when)</h3>
                     <p data-i18n="positionDesc">In poker, the order of action rotates clockwise every hand. The later
-                        you act, the more
-                        information you have about what your opponents will do.</p>
+                        you act, the more information you have about what your opponents will do.</p>
 
                     <div class="svg-container">
                         <svg viewBox="0 0 400 250" class="position-svg">
-                            <!-- Table -->
                             <rect x="50" y="50" width="300" height="150" rx="75" fill="#0d4a30" stroke="#805b32"
                                 stroke-width="8" />
-
-                            <!-- Seats -->
-                            <!-- Top Left: UTG -->
-                            <circle cx="100" cy="50" r="18" fill="#e53e3e" />
-                            <text x="100" y="55" fill="white" font-size="12" font-weight="bold"
-                                text-anchor="middle">UTG</text>
-
-                            <!-- Top Right: HJ -->
-                            <circle cx="300" cy="50" r="18" fill="#4a5568" />
-                            <text x="300" y="55" fill="white" font-size="12" font-weight="bold"
-                                text-anchor="middle">HJ</text>
-
-                            <!-- Far Right: CO -->
-                            <circle cx="350" cy="125" r="18" fill="#4a5568" />
-                            <text x="350" y="130" fill="white" font-size="12" font-weight="bold"
-                                text-anchor="middle">CO</text>
-
-                            <!-- Bottom Right: BTN -->
-                            <circle cx="300" cy="200" r="18" fill="#3182ce" />
-                            <text x="300" y="205" fill="white" font-size="12" font-weight="bold"
-                                text-anchor="middle">BTN</text>
-                            <!-- Dealer Button -->
-                            <circle cx="265" cy="180" r="8" fill="white" />
-                            <text x="265" y="183" fill="black" font-size="6" font-weight="bold"
-                                text-anchor="middle">D</text>
-
-                            <!-- Bottom Left: SB -->
-                            <circle cx="100" cy="200" r="18" fill="#718096" />
-                            <text x="100" y="205" fill="white" font-size="12" font-weight="bold"
-                                text-anchor="middle">SB</text>
-
-                            <!-- Far Left: BB -->
-                            <circle cx="50" cy="125" r="18" fill="#718096" />
-                            <text x="50" y="130" fill="white" font-size="12" font-weight="bold"
-                                text-anchor="middle">BB</text>
-
-                            <!-- Arrow indicating Action Flow -->
+                            <circle cx="100" cy="50" r="18" fill="#e53e3e" /><text x="100" y="55" fill="white"
+                                font-size="12" font-weight="bold" text-anchor="middle">UTG</text>
+                            <circle cx="300" cy="50" r="18" fill="#4a5568" /><text x="300" y="55" fill="white"
+                                font-size="12" font-weight="bold" text-anchor="middle">HJ</text>
+                            <circle cx="350" cy="125" r="18" fill="#4a5568" /><text x="350" y="130" fill="white"
+                                font-size="12" font-weight="bold" text-anchor="middle">CO</text>
+                            <circle cx="300" cy="200" r="18" fill="#3182ce" /><text x="300" y="205" fill="white"
+                                font-size="12" font-weight="bold" text-anchor="middle">BTN</text>
+                            <circle cx="265" cy="180" r="8" fill="white" /><text x="265" y="183" fill="black"
+                                font-size="6" font-weight="bold" text-anchor="middle">D</text>
+                            <circle cx="100" cy="200" r="18" fill="#718096" /><text x="100" y="205" fill="white"
+                                font-size="12" font-weight="bold" text-anchor="middle">SB</text>
+                            <circle cx="50" cy="125" r="18" fill="#718096" /><text x="50" y="130" fill="white"
+                                font-size="12" font-weight="bold" text-anchor="middle">BB</text>
                             <path d="M 125 35 Q 200 10 275 35" fill="none" stroke="rgba(255,255,255,0.3)"
                                 stroke-width="2" stroke-dasharray="5,5" marker-end="url(#arrowhead)" />
                             <defs>
@@ -183,57 +250,44 @@
 
                     <ul>
                         <li data-i18n="utgDesc"><strong>UTG (Under the Gun):</strong> Acts first. Has no information.
-                            Must play very strong
-                            hands (e.g. AA, KK, AKs).</li>
+                            Must play very strong hands (e.g. AA, KK, AKs).</li>
                         <li data-i18n="hjCoDesc"><strong>HJ (Hijack) & CO (Cutoff):</strong> Middle/Late positions. Can
-                            play slightly weaker
-                            hands.</li>
+                            play slightly weaker hands.</li>
                         <li data-i18n="btnDesc"><strong>BTN (Button):</strong> Acts last post-flop. Most powerful
-                            position. Can play a very
-                            wide range of hands to steal the blinds.</li>
+                            position. Can play a very wide range of hands to steal the blinds.</li>
                         <li data-i18n="sbBbDesc"><strong>SB (Small Blind) & BB (Big Blind):</strong> Forced to put money
-                            in before the cards
-                            are dealt, and have to act first post-flop.</li>
+                            in before the cards are dealt, and have to act first post-flop.</li>
                     </ul>
 
                     <h3 data-i18n="preflopStratTitle">Preflop Strategy</h3>
                     <p data-i18n="preflopStratDesc">When the action folds to you, you are deciding whether to
-                        <strong>Fold</strong> or <strong>Raise
-                            First In (RFI)</strong>. “Limping” (just calling the big blind) is generally a bad strategy
-                        for beginners. You should either raise to take control, or fold.</p>
+                        <strong>Fold</strong> or <strong>Raise First In (RFI)</strong>.
+                    </p>
 
-                    <h3 data-i18n="advStratTitle">Advanced Strategy Concepts (via PokerVIP)</h3>
+                    <h3 data-i18n="advStratTitle">Advanced Strategy Concepts</h3>
                     <ul>
-                        <li data-i18n="advUtgDesc"><strong>UTG Tightness:</strong> Being Under the Gun puts you at a
-                            severe informational
-                            disadvantage. You must play very a tight range because you face actions from the entire
-                            table behind you.</li>
-                        <li data-i18n="adv3BetDesc"><strong>Dealing with 3-Bets:</strong> A "3-Bet" is a re-raise
-                            preflop. If you open-raise
-                            from UTG and face a 3-bet, your opponent usually has a very strong hand. You must defend
-                            cautiously or 4-bet with premiums.</li>
-                        <li data-i18n="advImpliedDesc"><strong>Implied Odds:</strong> The money you expect to win
-                            <em>after</em> making a big hand
-                            (like hitting a Set with a pocket pair). Small pairs can sometimes call 3-bets if the
-                            opponent's stack is deep enough to pay you off when you hit.</li>
+                        <li data-i18n="advUtgDesc"><strong>UTG Tightness:</strong> Severe informational disadvantage —
+                            play a tight range.</li>
+                        <li data-i18n="adv3BetDesc"><strong>Dealing with 3-Bets:</strong> A 3-Bet is a re-raise preflop
+                            — opponent usually has a very strong hand.</li>
+                        <li data-i18n="advImpliedDesc"><strong>Implied Odds:</strong> The money you expect to win after
+                            making a big hand.</li>
                     </ul>
 
                     <h3 data-i18n="handRanksTitle">Basic Hand Rankings (Strongest to Weakest)</h3>
                     <ul class="rankings-list">
                         <li data-i18n="rankRoyal"><strong>Royal Flush:</strong> A<span class="suit-red">♥</span> K<span
                                 class="suit-red">♥</span> Q<span class="suit-red">♥</span> J<span
-                                class="suit-red">♥</span> T<span class="suit-red">♥</span> (all same suit)</li>
+                                class="suit-red">♥</span> T<span class="suit-red">♥</span></li>
                         <li data-i18n="rankStrFlush"><strong>Straight Flush:</strong> 9<span class="suit-black">♠</span>
                             8<span class="suit-black">♠</span> 7<span class="suit-black">♠</span> 6<span
-                                class="suit-black">♠</span> 5<span class="suit-black">♠</span> (in sequence, same suit)
-                        </li>
+                                class="suit-black">♠</span> 5<span class="suit-black">♠</span></li>
                         <li data-i18n="rankQuads"><strong>Four of a Kind:</strong> Q<span class="suit-black">♠</span>
                             Q<span class="suit-red">♥</span> Q<span class="suit-red">♦</span> Q<span
                                 class="suit-black">♣</span> 4<span class="suit-black">♠</span></li>
                         <li data-i18n="rankBoat"><strong>Full House:</strong> K<span class="suit-black">♠</span> K<span
                                 class="suit-red">♥</span> K<span class="suit-black">♣</span> 2<span
-                                class="suit-red">♦</span> 2<span class="suit-black">♠</span> (three of a kind + pair)
-                        </li>
+                                class="suit-red">♦</span> 2<span class="suit-black">♠</span></li>
                         <li data-i18n="rankFlush"><strong>Flush:</strong> Any five cards of the same suit.</li>
                         <li data-i18n="rankStraight"><strong>Straight:</strong> 5 6 7 8 9 (in sequence, mixed suits)
                         </li>
@@ -245,7 +299,68 @@
                 </div>
             </div>
         </div>
-    </div>
+
+        <!-- ===================== STATS MODAL ===================== -->
+        <div id="stats-modal" class="modal hidden">
+            <div class="modal-content glassmorphism modal-large">
+                <div class="modal-header">
+                    <h2 data-i18n="statsTitle">Progress & Accuracy</h2>
+                    <button class="btn-close" onclick="closeStatsModal()">&times;</button>
+                </div>
+                <div id="stats-content" class="modal-body stats-body">
+                    <!-- Injected by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================== RANGE EDITOR MODAL ===================== -->
+        <div id="range-editor-modal" class="modal hidden">
+            <div class="modal-content glassmorphism range-editor-modal-content">
+                <div class="modal-header">
+                    <h2 data-i18n="rangeEditorTitle">Range Editor</h2>
+                    <button class="btn-close" onclick="closeRangeEditor()">&times;</button>
+                </div>
+                <p class="range-editor-help" data-i18n="rangeEditorHelp">Click cells to toggle: Fold → Raise → Call →
+                    Fold</p>
+                <div class="range-editor-purpose-wrap">
+                    <p class="range-editor-purpose" data-i18n="rangeEditorPurpose">Use this tool to visualize and save
+                        your custom preflop ranges for study.</p>
+                </div>
+                <div class="range-editor-legend">
+                    <span class="re-legend-item re-raise">Raise</span>
+                    <span class="re-legend-item re-call">Call</span>
+                    <span class="re-legend-item re-fold">Fold</span>
+                </div>
+                <div id="range-editor-grid" class="chart-grid range-editor-grid"></div>
+                <div class="range-editor-controls">
+                    <div class="range-save-row">
+                        <span data-i18n="rangeNameLabel">Name:</span>
+                        <input id="range-name-input" class="range-name-input" type="text" placeholder="Range name..."
+                            data-i18n-placeholder="rangeEditorNamePlaceholder">
+                        <button class="btn-range-action" onclick="saveCustomRange()"
+                            data-i18n="rangeEditorSave">Save</button>
+                        <button class="btn-range-action btn-range-clear" onclick="clearEditorGrid()"
+                            data-i18n="rangeEditorClear">Clear</button>
+                    </div>
+                    <div class="range-load-row">
+                        <select id="range-load-select" class="mode-select">
+                            <option value="">-- No saved ranges --</option>
+                        </select>
+                        <button class="btn-range-action" onclick="loadCustomRange()"
+                            data-i18n="rangeEditorLoad">Load</button>
+                        <button class="btn-range-action btn-range-delete" onclick="deleteCustomRange()"
+                            data-i18n="rangeEditorDelete">Delete</button>
+                        <button class="btn-range-action" onclick="exportRange()" title="Export to Clipboard">📤</button>
+                        <button class="btn-range-action" onclick="importRange()" title="Import from JSON">📥</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /app-container -->
+
+    <div id="toast-container"></div>
+
     <script src="i18n.js"></script>
     <script src="script.js"></script>
 </body>

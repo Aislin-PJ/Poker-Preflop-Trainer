@@ -1,22 +1,15 @@
-// --- STATE ---
-let state = {
-    score: 0,
-    streak: 0,
-    currentMode: 'RFI', // RFI, DEFEND, PUSH_FOLD
-    currentHand: null,
-    currentPosition: null,
-    correctAction: null,
-    explanation: "",
-    lang: 'en'
-};
-
-// --- CONSTANTS ---
+// ============================================================
+// CONSTANTS
+// ============================================================
 const POSITIONS = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
 const SUITS = ['hearts', 'diamonds', 'clubs', 'spades'];
 const RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
 const CHART_RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+const LS_KEY = 'pokerTrainer_v1';
 
-// Basic Raise First In (RFI) Models by Position
+// ============================================================
+// RAISE FIRST IN RANGES (by position)
+// ============================================================
 const RFI_RANGES = {
     UTG: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', 'AKs', 'AQs', 'AJs', 'ATs', 'KQs', 'KJs', 'KTs', 'QJs', 'QTs', 'JTs', 'T9s', 'AKo', 'AQo']),
     HJ: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55', 'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s', 'KQs', 'KJs', 'KTs', 'K9s', 'QJs', 'QTs', 'Q9s', 'JTs', 'J9s', 'T9s', '98s', '87s', 'AKo', 'AQo', 'AJo', 'ATo', 'KQo']),
@@ -25,90 +18,218 @@ const RFI_RANGES = {
 };
 RFI_RANGES.SB = RFI_RANGES.BTN;
 
-// Basic 10bb Push/Fold Nash Chart Ranges (Simplified broad overview)
+// ============================================================
+// PUSH / FOLD RANGES (multiple stack sizes)
+// ============================================================
+const PUSH_6BB = {
+    UTG: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55', '44', '33', '22', 'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s', 'KQs', 'KJs', 'KTs', 'K9s', 'K8s', 'QJs', 'QTs', 'Q9s', 'JTs', 'T9s', '98s', '87s', '76s', '65s', 'AKo', 'AQo', 'AJo', 'ATo', 'A9o', 'A8o', 'A7o', 'KQo', 'KJo', 'KTo', 'QJo', 'JTo']),
+    HJ: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55', '44', '33', '22', 'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s', 'KQs', 'KJs', 'KTs', 'K9s', 'K8s', 'K7s', 'QJs', 'QTs', 'Q9s', 'Q8s', 'JTs', 'J9s', 'T9s', 'T8s', '98s', '87s', '76s', '65s', '54s', 'AKo', 'AQo', 'AJo', 'ATo', 'A9o', 'A8o', 'A7o', 'A6o', 'KQo', 'KJo', 'KTo', 'K9o', 'QJo', 'QTo', 'JTo']),
+    CO: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55', '44', '33', '22', 'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s', 'KQs', 'KJs', 'KTs', 'K9s', 'K8s', 'K7s', 'K6s', 'QJs', 'QTs', 'Q9s', 'Q8s', 'Q7s', 'JTs', 'J9s', 'J8s', 'T9s', 'T8s', '98s', '87s', '76s', '65s', '54s', 'AKo', 'AQo', 'AJo', 'ATo', 'A9o', 'A8o', 'A7o', 'A6o', 'A5o', 'KQo', 'KJo', 'KTo', 'K9o', 'QJo', 'QTo', 'Q9o', 'JTo', 'T9o']),
+};
+PUSH_6BB.BTN = new Set([...PUSH_6BB.CO, 'K5s', 'K4s', 'K3s', 'K2s', 'Q6s', 'Q5s', 'Q4s', 'J7s', 'J6s', 'T7s', '97s', '86s', '75s', 'A4o', 'A3o', 'A2o', 'K8o', 'K7o', 'Q8o', 'J9o', 'J8o', 'T8o', '98o', '87o']);
+PUSH_6BB.SB = new Set([...PUSH_6BB.BTN, 'Q3s', 'Q2s', 'J5s', 'J4s', 'T6s', '96s', '85s', '74s', 'K6o', 'K5o', 'Q7o', 'J7o', 'T7o', '97o', '76o']);
+PUSH_6BB.BB = PUSH_6BB.SB;
+
+const PUSH_8BB = {
+    UTG: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55', '44', '33', '22', 'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s', 'KQs', 'KJs', 'KTs', 'K9s', 'QJs', 'QTs', 'Q9s', 'JTs', 'T9s', '98s', '87s', 'AKo', 'AQo', 'AJo', 'ATo', 'A9o', 'A8o', 'KQo', 'KJo']),
+    HJ: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55', '44', '33', '22', 'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s', 'KQs', 'KJs', 'KTs', 'K9s', 'K8s', 'QJs', 'QTs', 'Q9s', 'JTs', 'J9s', 'T9s', '98s', '87s', '76s', 'AKo', 'AQo', 'AJo', 'ATo', 'A9o', 'A8o', 'A7o', 'KQo', 'KJo', 'KTo', 'QJo']),
+    CO: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55', '44', '33', '22', 'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s', 'KQs', 'KJs', 'KTs', 'K9s', 'K8s', 'K7s', 'QJs', 'QTs', 'Q9s', 'Q8s', 'JTs', 'J9s', 'T9s', 'T8s', '98s', '87s', '76s', '65s', 'AKo', 'AQo', 'AJo', 'ATo', 'A9o', 'A8o', 'A7o', 'A6o', 'KQo', 'KJo', 'KTo', 'QJo', 'QTo', 'JTo']),
+};
+PUSH_8BB.BTN = new Set([...PUSH_8BB.CO, 'K6s', 'K5s', 'Q7s', 'J8s', 'T7s', '97s', '86s', '75s', '65s', '54s', 'A5o', 'A4o', 'A3o', 'A2o', 'K9o', 'K8o', 'Q9o', 'Q8o', 'J9o', 'J8o', 'T9o', 'T8o', '98o']);
+PUSH_8BB.SB = new Set([...PUSH_8BB.BTN, 'K4s', 'K3s', 'K2s', 'Q6s', 'Q5s', 'J7s', '96s', '85s', '74s', 'K7o', 'K6o', 'Q7o', 'J7o', 'T7o', '97o', '87o', '76o']);
+PUSH_8BB.BB = PUSH_8BB.SB;
+
 const PUSH_10BB = {
     UTG: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55', 'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'KQs', 'KJs', 'KTs', 'QJs', 'QTs', 'JTs', 'T9s', 'AKo', 'AQo', 'AJo', 'ATo', 'KQo']),
     HJ: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55', '44', '33', '22', 'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'KQs', 'KJs', 'KTs', 'K9s', 'QJs', 'QTs', 'Q9s', 'JTs', 'T9s', '98s', 'AKo', 'AQo', 'AJo', 'ATo', 'A9o', 'KQo', 'KJo']),
     CO: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55', '44', '33', '22', 'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s', 'KQs', 'KJs', 'KTs', 'K9s', 'K8s', 'K7s', 'QJs', 'QTs', 'Q9s', 'Q8s', 'JTs', 'J9s', 'T9s', 'T8s', '98s', '87s', '76s', 'AKo', 'AQo', 'AJo', 'ATo', 'A9o', 'A8o', 'A7o', 'A5o', 'KQo', 'KJo', 'KTo', 'QJo']),
 };
-
-// Simplified BTN vs CO Raise Defense Ranges (3-Bet and Call)
-const DEFEND_BTN = {
-    // Premium hands to 3-Bet for value
-    THREE_BET: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', 'AKs', 'AQs', 'AJs', 'KQs', 'AKo', 'AQo']),
-    // Broad, playable hands to Call in position
-    CALL: new Set(['99', '88', '77', '66', '55', '44', '33', '22', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s', 'KJs', 'KTs', 'K9s', 'QJs', 'QTs', 'Q9s', 'JTs', 'J9s', 'T9s', '98s', '87s', '76s', 'AJo', 'ATo', 'KQo', 'KJo', 'QJo'])
-};
-
-// Use roughly similar or wider logic for BTN and SB on 10bb.
 PUSH_10BB.BTN = new Set([...PUSH_10BB.CO, 'K6s', 'K5s', 'K4s', 'K3s', 'K2s', 'Q7s', 'Q6s', 'Q5s', 'J8s', 'J7s', 'T7s', '97s', '86s', '65s', 'A6o', 'A4o', 'A3o', 'A2o', 'K9o', 'K8o', 'QTo', 'Q9o', 'JTo']);
 PUSH_10BB.SB = new Set([...PUSH_10BB.BTN, 'Q4s', 'Q3s', 'Q2s', 'J6s', 'J5s', 'T6s', '96s', '75s', 'K7o', 'K6o', 'K5o', 'Q8o', 'J9o', 'J8o', 'T9o', 'T8o', '98o']);
+PUSH_10BB.BB = PUSH_10BB.SB;
 
-// --- DOM ELEMENTS ---
-const holeCardsEl = document.getElementById('hole-cards');
-const heroPositionEl = document.getElementById('hero-position');
-const scenarioTextEl = document.getElementById('scenario-text');
-const feedbackEl = document.getElementById('feedback');
-const feedbackTitleEl = document.getElementById('feedback-title');
-const feedbackMessageEl = document.getElementById('feedback-message');
-const scoreEl = document.getElementById('score');
-const streakEl = document.getElementById('streak');
-const chartModalEl = document.getElementById('chart-modal');
-let chartGridEl = document.getElementById('chart-grid');
-const infoModalEl = document.getElementById('info-modal');
-const btnFoldEl = document.getElementById('btn-fold');
-const btnCallEl = document.getElementById('btn-call');
-const btnRaiseEl = document.getElementById('btn-raise');
-const btnAllInEl = document.getElementById('btn-allin');
-const coachContentEl = document.getElementById('coach-content');
-const coachBadgeEl = document.getElementById('coach-badge');
+const PUSH_12BB = {
+    UTG: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', 'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'KQs', 'KJs', 'AKo', 'AQo', 'AJo']),
+    HJ: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55', '44', 'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'KQs', 'KJs', 'KTs', 'K9s', 'QJs', 'QTs', 'JTs', 'T9s', 'AKo', 'AQo', 'AJo', 'ATo', 'KQo', 'KJo']),
+    CO: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55', '44', '33', '22', 'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s', 'KQs', 'KJs', 'KTs', 'K9s', 'K8s', 'QJs', 'QTs', 'Q9s', 'JTs', 'J9s', 'T9s', '98s', '87s', 'AKo', 'AQo', 'AJo', 'ATo', 'A9o', 'A8o', 'KQo', 'KJo', 'KTo', 'QJo']),
+};
+PUSH_12BB.BTN = new Set([...PUSH_12BB.CO, 'K7s', 'K6s', 'K5s', 'K4s', 'Q8s', 'Q7s', 'J8s', 'T8s', '97s', '86s', '76s', '65s', 'A7o', 'A6o', 'A5o', 'A4o', 'K9o', 'K8o', 'Q9o', 'JTo', 'J9o', 'T9o']);
+PUSH_12BB.SB = new Set([...PUSH_12BB.BTN, 'K3s', 'K2s', 'Q6s', 'Q5s', 'J7s', 'T7s', '96s', '85s', '75s', 'A3o', 'A2o', 'K7o', 'K6o', 'Q8o', 'J8o', 'T8o', '98o', '87o']);
+PUSH_12BB.BB = PUSH_12BB.SB;
 
-window.toggleLanguage = function () {
-    state.lang = state.lang === 'en' ? 'zh-TW' : 'en';
-    const btn = document.getElementById('lang-toggle');
-    btn.innerText = state.lang === 'en' ? '繁' : 'EN';
+const PUSH_15BB = {
+    UTG: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', '99', 'AKs', 'AQs', 'AJs', 'KQs', 'AKo', 'AQo']),
+    HJ: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', 'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A5s', 'KQs', 'KJs', 'KTs', 'QJs', 'JTs', 'AKo', 'AQo', 'AJo', 'ATo', 'KQo']),
+    CO: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55', '44', '33', 'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s', 'KQs', 'KJs', 'KTs', 'K9s', 'QJs', 'QTs', 'Q9s', 'JTs', 'T9s', '98s', 'AKo', 'AQo', 'AJo', 'ATo', 'A9o', 'KQo', 'KJo', 'QJo']),
+};
+PUSH_15BB.BTN = new Set([...PUSH_15BB.CO, '22', 'K8s', 'K7s', 'K6s', 'K5s', 'Q8s', 'Q7s', 'J9s', 'J8s', 'T8s', 'T7s', '87s', '76s', '65s', 'A8o', 'A7o', 'A6o', 'A5o', 'A4o', 'K9o', 'K8o', 'QTo', 'Q9o', 'JTo', 'J9o', 'T9o']);
+PUSH_15BB.SB = new Set([...PUSH_15BB.BTN, 'K4s', 'K3s', 'K2s', 'Q6s', 'J7s', '97s', '86s', '75s', 'A3o', 'A2o', 'K7o', 'K6o', 'Q8o', 'J8o', 'T8o', '98o']);
+PUSH_15BB.BB = PUSH_15BB.SB;
 
-    // Update all static i18n data
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (I18N[state.lang][key]) {
-            el.innerHTML = I18N[state.lang][key];
-        }
-    });
+const PUSH_RANGES_BY_STACK = { '6': PUSH_6BB, '8': PUSH_8BB, '10': PUSH_10BB, '12': PUSH_12BB, '15': PUSH_15BB };
 
-    // Update dynamic text
-    changeMode(state.currentMode, true); // preserve score
-    if (state.currentHand && state.currentPosition) {
-        updateScenarioUI();
-    }
-
-    // Update active feedback modal text if visible
-    if (!feedbackEl.classList.contains('hidden')) {
-        const isCorrect = Array.from(feedbackEl.classList).includes('success');
-        feedbackTitleEl.innerText = isCorrect ? I18N[state.lang].feedbackCorrect : I18N[state.lang].feedbackIncorrect;
-        // Ideally we would regenerate the full explanation text in the new language here,
-        // but it requires re-evaluating. For simplicity, next hand will be strictly correct.
-        // We will just update scenario text.
+// ============================================================
+// DEFEND SCENARIOS
+// ============================================================
+const DEFEND_SCENARIOS = {
+    BTN_VS_CO: {
+        hero: 'BTN', villain: 'CO',
+        THREE_BET: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', 'AKs', 'AQs', 'AJs', 'KQs', 'AKo', 'AQo']),
+        CALL: new Set(['99', '88', '77', '66', '55', '44', '33', '22', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s', 'KJs', 'KTs', 'K9s', 'QJs', 'QTs', 'Q9s', 'JTs', 'J9s', 'T9s', '98s', '87s', '76s', 'AJo', 'ATo', 'KQo', 'KJo', 'QJo'])
+    },
+    BTN_VS_HJ: {
+        hero: 'BTN', villain: 'HJ',
+        THREE_BET: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', 'AKs', 'AQs', 'AJs', 'KQs', 'AKo', 'AQo']),
+        CALL: new Set(['99', '88', '77', '66', '55', '44', '33', '22', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'KJs', 'KTs', 'K9s', 'QJs', 'QTs', 'Q9s', 'JTs', 'J9s', 'T9s', '98s', '87s', '76s', 'AJo', 'ATo', 'KQo', 'KJo'])
+    },
+    BB_VS_BTN: {
+        hero: 'BB', villain: 'BTN',
+        THREE_BET: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', 'AKs', 'AQs', 'AJs', 'KQs', 'A5s', 'A4s', 'AKo', 'AQo']),
+        CALL: new Set(['99', '88', '77', '66', '55', '44', '33', '22', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A3s', 'A2s', 'KJs', 'KTs', 'K9s', 'K8s', 'QJs', 'QTs', 'Q9s', 'Q8s', 'JTs', 'J9s', 'J8s', 'T9s', 'T8s', '98s', '87s', '76s', '65s', 'AJo', 'ATo', 'A9o', 'KQo', 'KJo', 'KTo', 'QJo', 'QTo', 'JTo', 'T9o'])
+    },
+    BB_VS_SB: {
+        hero: 'BB', villain: 'SB',
+        THREE_BET: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', 'AKs', 'AQs', 'AJs', 'KQs', 'A5s', 'A4s', 'A3s', 'AKo', 'AQo', 'AJo']),
+        CALL: new Set(['99', '88', '77', '66', '55', '44', '33', '22', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A2s', 'KJs', 'KTs', 'K9s', 'K8s', 'K7s', 'QJs', 'QTs', 'Q9s', 'Q8s', 'JTs', 'J9s', 'J8s', 'T9s', 'T8s', '98s', '97s', '87s', '86s', '76s', '65s', '54s', 'ATo', 'A9o', 'KQo', 'KJo', 'KTo', 'K9o', 'QJo', 'QTo', 'Q9o', 'JTo', 'J9o', 'T9o', '98o'])
+    },
+    SB_VS_BTN: {
+        hero: 'SB', villain: 'BTN',
+        THREE_BET: new Set(['AA', 'KK', 'QQ', 'JJ', 'TT', '99', 'AKs', 'AQs', 'AJs', 'ATs', 'KQs', 'KJs', 'A5s', 'A4s', 'A3s', 'A2s', 'AKo', 'AQo', 'AJo']),
+        CALL: new Set() // SB folds or 3-bets — minimal calling
     }
 };
 
-function updateScenarioUI() {
-    if (!state.currentHand) return;
-    const comboName = getComboName(state.currentHand);
-    if (state.currentMode === 'RFI') {
-        scenarioTextEl.innerText = I18N[state.lang].scenarioRfi(comboName, I18N[state.lang].position[state.currentPosition]);
-        heroPositionEl.innerText = I18N[state.lang].position[state.currentPosition];
-    } else if (state.currentMode === 'PUSH_FOLD') {
-        scenarioTextEl.innerText = I18N[state.lang].scenarioPush(comboName, I18N[state.lang].position[state.currentPosition]);
-        heroPositionEl.innerText = I18N[state.lang].position[state.currentPosition];
-    } else if (state.currentMode === 'DEFEND') {
-        scenarioTextEl.innerText = I18N[state.lang].scenarioDefend(comboName);
-        heroPositionEl.innerText = I18N[state.lang].positionBtnVsCo;
+// ============================================================
+// ALL 169 COMBOS (for weighted sampling)
+// ============================================================
+function buildAllCombos() {
+    const combos = [];
+    for (let i = 0; i < CHART_RANKS.length; i++) {
+        for (let j = 0; j < CHART_RANKS.length; j++) {
+            const r1 = CHART_RANKS[i], r2 = CHART_RANKS[j];
+            if (i === j) {
+                combos.push({ name: r1 + r2, baseWeight: 6 }); // pair: 6 combos
+            } else if (j > i) {
+                combos.push({ name: r1 + r2 + 's', baseWeight: 4 }); // suited: 4
+            } else {
+                combos.push({ name: r2 + r1 + 'o', baseWeight: 12 }); // offsuit: 12
+            }
+        }
     }
+    return combos;
+}
+const ALL_COMBOS = buildAllCombos();
+
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+    score: 0,
+    streak: 0,
+    currentMode: 'RFI',
+    currentHand: null,
+    currentPosition: null,
+    correctAction: null,
+    explanation: '',
+    lang: 'en',
+    currentStack: '10',
+    currentDefendScenario: 'BTN_VS_CO',
+    handHistory: [],
+    comboWeights: {},
+    chartPosition: 'UTG',
+    rangeEditorData: {},    // cellName -> 'raise'|'call'|'fold'
+    customRanges: {},       // name -> { raise: [...], call: [...] }
+    stats: {
+        totalHands: 0,
+        totalCorrect: 0,
+        byPosition: {},
+        byMode: {}
+    }
+};
+
+// ============================================================
+// LOCAL STORAGE
+// ============================================================
+function loadFromStorage() {
+    try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (saved.stats) state.stats = saved.stats;
+        if (saved.comboWeights) state.comboWeights = saved.comboWeights;
+        if (saved.handHistory) state.handHistory = saved.handHistory;
+        if (saved.customRanges) state.customRanges = saved.customRanges;
+        else state.customRanges = {};
+        refreshRangeDropdown();
+    } catch (e) { console.warn('Could not load storage', e); state.customRanges = {}; }
 }
 
-// I18N removed from here since it lives in i18n.js
-// --- HELPER FUNCS ---
+function saveToStorage() {
+    try {
+        localStorage.setItem(LS_KEY, JSON.stringify({
+            stats: state.stats,
+            comboWeights: state.comboWeights,
+            handHistory: state.handHistory.slice(-20),
+            customRanges: state.customRanges
+        }));
+    } catch (e) { console.warn('Could not save storage', e); }
+}
+
+function recordStat(position, mode, isCorrect) {
+    state.stats.totalHands++;
+    if (isCorrect) state.stats.totalCorrect++;
+    if (!state.stats.byPosition[position]) state.stats.byPosition[position] = { hands: 0, correct: 0 };
+    state.stats.byPosition[position].hands++;
+    if (isCorrect) state.stats.byPosition[position].correct++;
+    if (!state.stats.byMode[mode]) state.stats.byMode[mode] = { hands: 0, correct: 0 };
+    state.stats.byMode[mode].hands++;
+    if (isCorrect) state.stats.byMode[mode].correct++;
+}
+
+function updateComboWeight(combo, isCorrect) {
+    const cur = state.comboWeights[combo] || 1.0;
+    state.comboWeights[combo] = isCorrect
+        ? Math.max(0.5, cur * 0.8)
+        : Math.min(5.0, cur * 1.5);
+}
+
+// ============================================================
+// WEIGHTED HAND SAMPLING (Adaptive Difficulty)
+// ============================================================
+function generateHandWeighted() {
+    const weights = ALL_COMBOS.map(c => c.baseWeight * (state.comboWeights[c.name] || 1.0));
+    const total = weights.reduce((a, b) => a + b, 0);
+    let rand = Math.random() * total;
+    let chosen = ALL_COMBOS[ALL_COMBOS.length - 1];
+    for (let i = 0; i < ALL_COMBOS.length; i++) {
+        rand -= weights[i];
+        if (rand <= 0) { chosen = ALL_COMBOS[i]; break; }
+    }
+    return comboToHand(chosen.name);
+}
+
+function comboToHand(comboName) {
+    const isPair = comboName.length === 2 && comboName[0] === comboName[1];
+    const isSuited = comboName.endsWith('s');
+    const isOffsuit = comboName.endsWith('o');
+    let r1, r2;
+    if (isPair) {
+        r1 = r2 = comboName[0];
+    } else {
+        r1 = comboName[0];
+        r2 = comboName[1];
+    }
+    const shuffled = [...SUITS].sort(() => Math.random() - 0.5);
+    let s1 = shuffled[0], s2 = shuffled[1];
+    if (isSuited) s2 = s1;
+    if (isOffsuit) { while (s2 === s1) { s2 = SUITS[Math.floor(Math.random() * 4)]; } }
+    if (isPair) { while (s2 === s1) { s2 = SUITS[Math.floor(Math.random() * 4)]; } }
+    return { c1: { rank: r1, suit: s1 }, c2: { rank: r2, suit: s2 } };
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
 function getComboName(hand) {
     if (!hand) return '';
     const isSuited = hand.c1.suit === hand.c2.suit;
@@ -120,324 +241,594 @@ function getComboName(hand) {
     return isPair ? `${high}${low}` : `${high}${low}${isSuited ? 's' : 'o'}`;
 }
 
-// --- GAME LOGIC ---
-
-// Simple Preflop Chart Logic (Placeholder / Simplified)
-function evaluateAction(hand, position) {
-    if (state.currentMode === 'RFI') {
-        return evaluateRFI(hand, position);
-    } else if (state.currentMode === 'PUSH_FOLD') {
-        return evaluatePushFold(hand, position);
-    } else if (state.currentMode === 'DEFEND') {
-        return evaluateDefend(hand, position);
-    }
-}
-
-function evaluateRFI(hand, position) {
-    // BB is a special case since it can't RFI. For this trainer, BB scenario doesn't mean much without action before.
-    // If BB, let's treat it functionally as folded to SB, so BB gets a walk.
-    if (position === 'BB') {
-        return { action: 'Raise', explanation: state.lang === 'zh-TW' ? '所有人都對大盲棄牌，大盲(BB)無行動贏得底池 (Walk)。為了練習我們將其標記為加注。' : 'Everyone folded to the BB, so BB wins the pot without action (Walk). For practice we just mark it Raise.' };
-    }
-
-    const comboName = getComboName(hand);
-    const range = RFI_RANGES[position];
-    let isRaise = range && range.has(comboName);
-
-    let explanation = "";
-
-    if (isRaise) {
-        if (position === 'UTG') {
-            explanation = I18N[state.lang].evalRfiUtgRaise(comboName);
-        } else {
-            explanation = I18N[state.lang].evalRfiRaise(position, comboName);
-        }
-        return { action: 'Raise', explanation: explanation };
-    } else {
-        if (position === 'UTG') {
-            explanation = I18N[state.lang].evalRfiUtgFold(comboName);
-        } else {
-            explanation = I18N[state.lang].evalRfiFold(position, comboName);
-        }
-        return { action: 'Fold', explanation: explanation };
-    }
-}
-
-function evaluatePushFold(hand, position) {
-    if (position === 'BB') {
-        return { action: 'All-In', explanation: state.lang === 'zh-TW' ? '所有人都對大盲棄牌，大盲無行動贏得底池 (Walk)。為了練習我們將其標記為全下。' : 'Everyone folded to the BB, so BB wins the pot without action (Walk). For practice we just mark it All-In.' };
-    }
-
-    const comboName = getComboName(hand);
-    const range = PUSH_10BB[position];
-    let isPush = range && range.has(comboName);
-
-    if (isPush) {
-        return { action: 'All-In', explanation: I18N[state.lang].evalPush(position, comboName) };
-    } else {
-        return { action: 'Fold', explanation: I18N[state.lang].evalPushFold(position, comboName) };
-    }
-}
-
-function evaluateDefend(hand, position) {
-    // For simplicity in this beginner trainer, we assume we are BTN facing a CO Open Raise.
-    const comboName = getComboName(hand);
-
-    // Check if it's a 3-bet
-    if (DEFEND_BTN.THREE_BET.has(comboName)) {
-        return { action: 'Raise', explanation: I18N[state.lang].evalDefendRaise(comboName) };
-    }
-
-    // Check if it's a Call
-    if (DEFEND_BTN.CALL.has(comboName)) {
-        return { action: 'Call', explanation: I18N[state.lang].evalDefendCall(comboName) };
-    }
-
-    // Default to Fold
-    return { action: 'Fold', explanation: I18N[state.lang].evalDefendFold(comboName) };
-}
-
-function generateHand() {
-    let r1 = RANKS[Math.floor(Math.random() * RANKS.length)];
-    let s1 = SUITS[Math.floor(Math.random() * SUITS.length)];
-    let r2 = RANKS[Math.floor(Math.random() * RANKS.length)];
-    let s2 = SUITS[Math.floor(Math.random() * SUITS.length)];
-
-    // Ensure not identical cards
-    while (r1 === r2 && s1 === s2) {
-        r2 = RANKS[Math.floor(Math.random() * RANKS.length)];
-        s2 = SUITS[Math.floor(Math.random() * SUITS.length)];
-    }
-
-    return { c1: { rank: r1, suit: s1 }, c2: { rank: r2, suit: s2 } };
-}
-
 function suitSymbol(suit) {
-    switch (suit) {
-        case 'hearts': return '♥';
-        case 'diamonds': return '♦';
-        case 'clubs': return '♣';
-        case 'spades': return '♠';
-        default: return '';
-    }
+    return { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' }[suit] || '';
 }
-
 function cardColor(suit) {
     return (suit === 'hearts' || suit === 'diamonds') ? 'red' : 'black';
 }
-
 function renderCard(card) {
-    const symbol = suitSymbol(card.suit);
-    const colorClass = cardColor(card.suit);
-    return `
-        <div class="card ${colorClass}">
-            <div class="rank">${card.rank}</div>
-            <div class="suit">${symbol}</div>
-        </div>
-    `;
+    const sym = suitSymbol(card.suit);
+    const cls = cardColor(card.suit);
+    return `<div class="card ${cls}"><div class="rank">${card.rank}</div><div class="suit">${sym}</div></div>`;
+}
+
+// Toast System
+window.showToast = function (msg, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    const icon = { success: '✅', error: '❌', info: 'ℹ️' }[type] || 'ℹ️';
+    toast.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.remove(); }, 3200);
+};
+
+function pct(correct, total) {
+    return total === 0 ? 0 : Math.round((correct / total) * 100);
+}
+
+// ============================================================
+// GAME LOGIC — EVALUATE
+// ============================================================
+function evaluateAction(hand, position) {
+    if (state.currentMode === 'RFI') return evaluateRFI(hand, position);
+    if (state.currentMode === 'PUSH_FOLD') return evaluatePushFold(hand, position);
+    if (state.currentMode === 'DEFEND') return evaluateDefend(hand);
+    if (state.currentMode === 'CUSTOM') return evaluateCustom(hand, state.currentCustomRangeName);
+}
+
+function evaluateCustom(hand, rangeName) {
+    const combo = getComboName(hand);
+    const range = state.customRanges[rangeName];
+    if (!range) return { action: 'Fold', explanation: 'No range selected.' };
+
+    if (range.raise && range.raise.includes(combo)) {
+        return { action: 'Raise', explanation: `Custom Range [${rangeName}]: ${combo} is a Raise.` };
+    }
+    if (range.call && range.call.includes(combo)) {
+        return { action: 'Call', explanation: `Custom Range [${rangeName}]: ${combo} is a Call.` };
+    }
+    return { action: 'Fold', explanation: `Custom Range [${rangeName}]: ${combo} is a Fold.` };
+}
+
+function evaluateRFI(hand, position) {
+    const combo = getComboName(hand);
+    const range = RFI_RANGES[position];
+    const isRaise = range && range.has(combo);
+    if (isRaise) {
+        return {
+            action: 'Raise', explanation: position === 'UTG'
+                ? I18N[state.lang].evalRfiUtgRaise(combo)
+                : I18N[state.lang].evalRfiRaise(position, combo)
+        };
+    }
+    return {
+        action: 'Fold', explanation: position === 'UTG'
+            ? I18N[state.lang].evalRfiUtgFold(combo)
+            : I18N[state.lang].evalRfiFold(position, combo)
+    };
+}
+
+function evaluatePushFold(hand, position) {
+    const combo = getComboName(hand);
+    const ranges = PUSH_RANGES_BY_STACK[state.currentStack] || PUSH_10BB;
+    const range = ranges[position];
+    if (range && range.has(combo)) return { action: 'All-In', explanation: I18N[state.lang].evalPush(position, combo, state.currentStack) };
+    return { action: 'Fold', explanation: I18N[state.lang].evalPushFold(position, combo, state.currentStack) };
+}
+
+function evaluateDefend(hand) {
+    const combo = getComboName(hand);
+    const sc = DEFEND_SCENARIOS[state.currentDefendScenario];
+    if (!sc) return { action: 'Fold', explanation: '' };
+    if (sc.THREE_BET.has(combo)) return { action: 'Raise', explanation: I18N[state.lang].evalDefendRaise(combo, sc.villain, sc.hero) };
+    if (sc.CALL && sc.CALL.has(combo)) return { action: 'Call', explanation: I18N[state.lang].evalDefendCall(combo, sc.villain, sc.hero) };
+    return { action: 'Fold', explanation: I18N[state.lang].evalDefendFold(combo, sc.villain, sc.hero) };
+}
+
+// ============================================================
+// DOM ELEMENTS (initialized on load)
+// ============================================================
+let feedbackEl, feedbackTitleEl, feedbackMsgEl, feedbackIconEl, scoreEl, streakEl, lifetimeHandsEl;
+let holeCardsEl, heroPositionEl, scenarioTextEl, chartModalEl, infoModalEl;
+let coachContentEl, coachBadgeEl, btnCallEl, btnRaiseEl, btnAllInEl;
+let accuracyHudEl;
+
+function initElements() {
+    feedbackEl = document.getElementById('feedback');
+    feedbackTitleEl = document.getElementById('feedback-title');
+    feedbackMsgEl = document.getElementById('feedback-message');
+    feedbackIconEl = document.getElementById('feedback-icon');
+    scoreEl = document.getElementById('score');
+    streakEl = document.getElementById('streak');
+    lifetimeHandsEl = document.getElementById('lifetime-hands');
+    holeCardsEl = document.getElementById('hole-cards');
+    heroPositionEl = document.getElementById('hero-position');
+    scenarioTextEl = document.getElementById('scenario-text');
+    chartModalEl = document.getElementById('chart-modal');
+    infoModalEl = document.getElementById('info-modal');
+    coachContentEl = document.getElementById('coach-content');
+    coachBadgeEl = document.getElementById('coach-badge');
+    btnCallEl = document.getElementById('btn-call');
+    btnRaiseEl = document.getElementById('btn-raise');
+    btnAllInEl = document.getElementById('btn-allin');
+    accuracyHudEl = document.getElementById('accuracy-hud');
+}
+
+function updateScenarioUI() {
+    if (!state.currentHand) return;
+    const t = I18N[state.lang];
+    const combo = getComboName(state.currentHand);
+    const pos = t.position[state.currentPosition] || state.currentPosition;
+    if (state.currentMode === 'RFI') {
+        scenarioTextEl.innerText = t.scenarioRfi(combo, pos);
+        heroPositionEl.innerText = t.position[state.currentPosition] || state.currentPosition;
+    } else if (state.currentMode === 'PUSH_FOLD') {
+        scenarioTextEl.innerText = t.scenarioPush(combo, pos, state.currentStack);
+        heroPositionEl.innerText = t.position[state.currentPosition] || state.currentPosition;
+    } else if (state.currentMode === 'DEFEND') {
+        const sc = DEFEND_SCENARIOS[state.currentDefendScenario];
+        scenarioTextEl.innerText = t.scenarioDefendFull(combo, sc.villain, sc.hero);
+        heroPositionEl.innerText = `${sc.hero} vs ${sc.villain}`;
+    } else if (state.currentMode === 'CUSTOM') {
+        scenarioTextEl.innerText = `You are dealt ${combo}. You are in position ${pos}.`;
+        heroPositionEl.innerText = pos;
+    }
 }
 
 function startTurn() {
     feedbackEl.classList.add('hidden');
 
-    // Generate scenario
-    state.currentPosition = POSITIONS[Math.floor(Math.random() * POSITIONS.length)];
-
-    const hand = generateHand();
-    state.currentHand = hand;
-
+    // pick position
     if (state.currentMode === 'DEFEND') {
-        // Force BTN position for this simplified scenario
-        state.currentPosition = 'BTN';
+        const keys = Object.keys(DEFEND_SCENARIOS);
+        state.currentDefendScenario = keys[Math.floor(Math.random() * keys.length)];
+        const sc = DEFEND_SCENARIOS[state.currentDefendScenario];
+        state.currentPosition = sc.hero;
+    } else {
+        const validPos = ['UTG', 'HJ', 'CO', 'BTN', 'SB'];
+        state.currentPosition = validPos[Math.floor(Math.random() * validPos.length)];
     }
 
-    // Render cards
-    holeCardsEl.innerHTML = renderCard(hand.c1) + renderCard(hand.c2);
+    const hand = generateHandWeighted();
+    state.currentHand = hand;
 
-    // Update scenario text using i18n-aware helper
+    holeCardsEl.innerHTML = renderCard(hand.c1) + renderCard(hand.c2);
+    if (navigator.vibrate) navigator.vibrate(20); // Light haptic deal
+
     updateScenarioUI();
 
-    // Evaluate logic
-    const evalResult = evaluateAction(hand, state.currentPosition);
-    state.correctAction = evalResult.action;
-    state.explanation = evalResult.explanation;
+    const result = evaluateAction(hand, state.currentPosition);
+    state.correctAction = result.action;
+    state.explanation = result.explanation;
 }
 
-// --- USER ACTION ---
 window.handleAction = function (action) {
-    if (!state.currentHand) return; // Prevent action if no hand
-
+    if (!state.currentHand) return;
     const isCorrect = action === state.correctAction;
+    const combo = getComboName(state.currentHand);
 
     if (isCorrect) {
         state.score += 10;
-        state.streak += 1;
+        state.streak++;
         feedbackTitleEl.innerText = I18N[state.lang].feedbackCorrect;
-        feedbackEl.className = "feedback success";
+        feedbackEl.className = 'feedback success';
+        if (feedbackIconEl) feedbackIconEl.innerText = '✅';
+        if (navigator.vibrate) navigator.vibrate([30, 50, 30]); // Success chime pattern
     } else {
-        state.score -= 5;
+        state.score = Math.max(0, state.score - 5);
         state.streak = 0;
         feedbackTitleEl.innerText = I18N[state.lang].feedbackIncorrect;
-        feedbackEl.className = "feedback error";
+        feedbackEl.className = 'feedback error';
+        if (feedbackIconEl) feedbackIconEl.innerText = '❌';
+        if (navigator.vibrate) navigator.vibrate(200); // Heavy error buzz
     }
 
-    feedbackMessageEl.innerHTML = `${I18N[state.lang].feedbackDetail(action, state.correctAction)}<br><br>${state.explanation}`;
-
+    feedbackMsgEl.innerHTML = `${I18N[state.lang].feedbackDetail(action, state.correctAction)}<br><br>${state.explanation}`;
     scoreEl.innerText = state.score;
     streakEl.innerText = state.streak;
-
     feedbackEl.classList.remove('hidden');
+
+    // Record stats + adaptive weight
+    recordStat(state.currentPosition, state.currentMode, isCorrect);
+    updateComboWeight(combo, isCorrect);
+
+    // Hand history
+    const entry = {
+        combo, position: state.currentPosition, mode: state.currentMode,
+        stack: state.currentMode === 'PUSH_FOLD' ? state.currentStack : null,
+        userAction: action, correctAction: state.correctAction, correct: isCorrect
+    };
+    state.handHistory.unshift(entry);
+    if (state.handHistory.length > 20) state.handHistory.pop();
+
+    saveToStorage();
+    renderHandHistory();
+
+    // Update live accuracy HUD
+    if (accuracyHudEl && state.stats.totalHands > 0) {
+        const pct = Math.round((state.stats.totalCorrect / state.stats.totalHands) * 100);
+        accuracyHudEl.innerText = pct + '%';
+        accuracyHudEl.style.color = pct >= 70 ? 'var(--color-raise)' : pct >= 50 ? '#f6ad55' : 'var(--color-fold)';
+    }
 };
 
-window.nextHand = function () {
-    startTurn();
-};
+window.nextHand = function () { startTurn(); };
 
+// ============================================================
+// MODE CHANGE
+// ============================================================
 window.changeMode = function (newMode, preserveScore) {
     state.currentMode = newMode;
     if (!preserveScore) {
-        state.score = 0;
-        state.streak = 0;
-        scoreEl.innerText = state.score;
-        streakEl.innerText = state.streak;
+        state.score = 0; state.streak = 0;
+        scoreEl.innerText = '0'; streakEl.innerText = '0';
     }
-
-    // Reset body theme class
     document.body.className = '';
-
     const t = I18N[state.lang];
+
+    const stackSelector = document.getElementById('stack-selector');
 
     if (newMode === 'PUSH_FOLD') {
         document.body.classList.add('theme-pushfold');
         coachBadgeEl.innerText = t.badgePushFold;
         coachBadgeEl.style.background = '#e53e3e';
         coachContentEl.innerHTML = t.coachPushFold;
-
         btnCallEl.classList.add('hidden');
         btnRaiseEl.classList.add('hidden');
         btnAllInEl.classList.remove('hidden');
+        if (stackSelector) stackSelector.classList.remove('hidden');
+        const customCtrl = document.getElementById('custom-mode-controls');
+        if (customCtrl) customCtrl.classList.add('hidden');
     } else if (newMode === 'DEFEND') {
         document.body.classList.add('theme-defend');
         coachBadgeEl.innerText = t.badgeDefend;
         coachBadgeEl.style.background = '#3182ce';
         coachContentEl.innerHTML = t.coachDefend;
-
         btnCallEl.classList.remove('hidden');
         btnRaiseEl.classList.remove('hidden');
         btnAllInEl.classList.add('hidden');
-    } else { // RFI mode
+        if (stackSelector) stackSelector.classList.add('hidden');
+        if (stackSelector) stackSelector.classList.add('hidden');
+        const customCtrl = document.getElementById('custom-mode-controls');
+        if (customCtrl) customCtrl.classList.add('hidden');
+    } else if (newMode === 'CUSTOM') {
+        document.body.classList.add('theme-custom');
+        coachBadgeEl.innerText = t.badgeCustom || 'Custom';
+        coachBadgeEl.style.background = '#4c51bf';
+        coachContentEl.innerHTML = t.coachCustom;
+        btnCallEl.classList.remove('hidden');
+        btnRaiseEl.classList.remove('hidden');
+        btnAllInEl.classList.remove('hidden');
+        if (stackSelector) stackSelector.classList.add('hidden');
+        const customCtrl = document.getElementById('custom-mode-controls');
+        if (customCtrl) customCtrl.classList.remove('hidden');
+        refreshCustomPracticePicker();
+    } else { // RFI
         document.body.classList.add('theme-rfi');
         coachBadgeEl.innerText = t.badgeRfi;
         coachBadgeEl.style.background = '#38a169';
         coachContentEl.innerHTML = t.coachRfi;
-
         btnCallEl.classList.remove('hidden');
         btnRaiseEl.classList.remove('hidden');
         btnAllInEl.classList.add('hidden');
+        if (stackSelector) stackSelector.classList.add('hidden');
+        const customCtrl = document.getElementById('custom-mode-controls');
+        if (customCtrl) customCtrl.classList.add('hidden');
     }
+    startTurn();
+    renderHandHistory();
+};
 
+// ============================================================
+// STACK SIZE SELECTOR (Push/Fold)
+// ============================================================
+window.setStack = function (size) {
+    state.currentStack = String(size);
+    document.querySelectorAll('.stack-btn').forEach(b => b.classList.toggle('active', b.dataset.stack === String(size)));
     startTurn();
 };
 
-window.renderChartGrid = function () {
-    if (!chartGridEl) return;
-    chartGridEl.innerHTML = '';
-
-    // Only support UTG right now for both modes
-    let range;
-    let titleHTML = '';
-    let legendHTML = '';
-    let gridHTML = '';
-
-    if (state.currentMode === 'RFI') {
-        range = RFI_RANGES['UTG'];
-        titleHTML = `
-            <div class="modal-header">
-                <h2>${I18N[state.lang].chartUtgRfiTitle}</h2>
-                <button class="btn-close" onclick="toggleChartModal()">&times;</button>
-            </div>
-        `;
-        legendHTML = `<div class="chart-legend"><div class="legend-item"><span class="color-box raise"></span> ${I18N[state.lang].legendRaise}</div><div class="legend-item"><span class="color-box fold"></span> ${I18N[state.lang].legendFold}</div></div>`;
-    } else if (state.currentMode === 'PUSH_FOLD') {
-        range = PUSH_10BB['UTG'];
-        titleHTML = `
-            <div class="modal-header">
-                <h2>${I18N[state.lang].chartUtgPushTitle}</h2>
-                <button class="btn-close" onclick="toggleChartModal()">&times;</button>
-            </div>
-        `;
-        legendHTML = `<div class="chart-legend"><div class="legend-item"><span class="color-box raise"></span> ${I18N[state.lang].legendRaise}</div><div class="legend-item"><span class="color-box fold"></span> ${I18N[state.lang].legendFold}</div></div>`;
-    } else if (state.currentMode === 'DEFEND') {
-        // Special render for Defend 
-        titleHTML = `
-            <div class="modal-header">
-                <h2>${I18N[state.lang].chartDefendTitle}</h2>
-                <button class="btn-close" onclick="toggleChartModal()">&times;</button>
-            </div>
-        `;
-        legendHTML = `<div class="chart-legend"><div class="legend-item"><span class="color-box raise"></span> ${I18N[state.lang].legend3Bet}</div><div class="legend-item" style="display:flex; align-items:center; gap:5px;"><div style="width:20px;height:20px;background:#3182ce;border-radius:4px;"></div> ${I18N[state.lang].legendCall}</div><div class="legend-item"><span class="color-box fold"></span> ${I18N[state.lang].legendFold}</div></div>`;
-
-        let range3Bet = DEFEND_BTN.THREE_BET;
-        let rangeCall = DEFEND_BTN.CALL;
-
-        for (let r1 of CHART_RANKS) {
-            for (let r2 of CHART_RANKS) {
-                let i1 = CHART_RANKS.indexOf(r1);
-                let i2 = CHART_RANKS.indexOf(r2);
-                let isSuited = i2 > i1;
-                let isPair = i1 === i2;
-                let high = i1 <= i2 ? r1 : r2;
-                let low = i1 <= i2 ? r2 : r1;
-
-                let cellName = isPair ? `${high}${low}` : `${high}${low}${isSuited ? 's' : 'o'}`;
-                let currentCombo = state.currentHand ? getComboName(state.currentHand) : null;
-                let isCurrent = currentCombo === cellName;
-
-                let bgClass = 'fold';
-                if (range3Bet.has(cellName)) { bgClass = 'raise'; }
-                else if (rangeCall.has(cellName)) { bgClass = 'defend-call'; }
-
-                let hlClass = isCurrent ? 'highlight' : '';
-
-                gridHTML += `<div class="chart-cell ${bgClass} ${hlClass}">${cellName}</div>`;
-            }
-        }
-
-        document.querySelector('#chart-modal .modal-content').innerHTML = titleHTML + `<div id="chart-grid" class="chart-grid">${gridHTML}</div>` + legendHTML;
-        chartGridEl = document.getElementById('chart-grid');
-        return;
-    } else {
-        chartGridEl.innerHTML = '<p>Charts not yet available.</p>';
+// ============================================================
+// HAND HISTORY
+// ============================================================
+function renderHandHistory() {
+    const el = document.getElementById('hand-history-list');
+    if (!el) return;
+    if (state.handHistory.length === 0) {
+        el.innerHTML = `<p class="history-empty">${I18N[state.lang].historyEmpty || 'No hands yet.'}</p>`;
         return;
     }
+    el.innerHTML = state.handHistory.map(h => {
+        const icon = h.correct ? '✅' : '❌';
+        const stackLabel = h.stack ? ` ${h.stack}bb` : '';
+        return `<div class="history-item ${h.correct ? 'correct' : 'incorrect'}">
+            ${icon} <strong>${h.combo}</strong> · ${h.position}${stackLabel} · ${h.mode}
+            <span class="history-action">${h.userAction}→<em>${h.correctAction}</em></span>
+        </div>`;
+    }).join('');
+}
 
+// ============================================================
+// STATS MODAL
+// ============================================================
+window.openStatsModal = function () {
+    const modal = document.getElementById('stats-modal');
+    if (!modal) return;
+    const t = I18N[state.lang];
+    const s = state.stats;
+    const overall = pct(s.totalCorrect, s.totalHands);
+
+    let posRows = POSITIONS.map(pos => {
+        const d = s.byPosition[pos] || { hands: 0, correct: 0 };
+        const p = pct(d.correct, d.hands);
+        return `<tr>
+            <td>${pos}</td>
+            <td>${d.hands}</td>
+            <td>
+              <div class="progress-bar-wrap"><div class="progress-bar" style="width:${p}%"></div></div>
+            </td>
+            <td>${p}%</td>
+        </tr>`;
+    }).join('');
+
+    const modeNames = { RFI: 'RFI (Open)', DEFEND: 'Defense', PUSH_FOLD: 'Push/Fold', CUSTOM: 'Custom' };
+    let modeRows = Object.keys(modeNames).map(m => {
+        const d = s.byMode[m] || { hands: 0, correct: 0 };
+        const p = pct(d.correct, d.hands);
+        return `<tr>
+            <td>${modeNames[m]}</td>
+            <td>${d.hands}</td>
+            <td>
+              <div class="progress-bar-wrap"><div class="progress-bar" style="width:${p}%"></div></div>
+            </td>
+            <td>${p}%</td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('stats-content').innerHTML = `
+        <div class="stats-overall">
+            <div class="overall-label">Overall Accuracy</div>
+            <div class="overall-value">${overall}%</div>
+            <div class="overall-sub">${s.totalCorrect} / ${s.totalHands} hands</div>
+        </div>
+        <h3>By Position</h3>
+        <table class="stats-table"><thead><tr><th>Pos</th><th>Hands</th><th>Accuracy</th><th>%</th></tr></thead><tbody>${posRows}</tbody></table>
+        <h3>By Mode</h3>
+        <table class="stats-table"><thead><tr><th>Mode</th><th>Hands</th><th>Accuracy</th><th>%</th></tr></thead><tbody>${modeRows}</tbody></table>
+        <button class="btn-reset-stats" onclick="resetStats()">🗑 Reset All Stats</button>
+    `;
+    modal.classList.remove('hidden');
+};
+
+window.closeStatsModal = function () {
+    const el = document.getElementById('stats-modal');
+    if (el) el.classList.add('hidden');
+};
+
+window.resetStats = function () {
+    if (!confirm('Reset all lifetime stats?')) return;
+    state.stats = { totalHands: 0, totalCorrect: 0, byPosition: {}, byMode: {} };
+    state.comboWeights = {};
+    state.handHistory = [];
+    saveToStorage();
+    renderHandHistory();
+    if (lifetimeHandsEl) lifetimeHandsEl.innerText = '0';
+    if (accuracyHudEl) {
+        accuracyHudEl.innerText = '—';
+        accuracyHudEl.style.color = 'var(--text-secondary)';
+    }
+    openStatsModal();
+};
+
+// ============================================================
+// SERVICE WORKER REGISTRATION (PWA)
+// ============================================================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+            console.log('SW registered: ', reg.scope);
+        }).catch(err => {
+            console.log('SW registration failed: ', err);
+        });
+    });
+}
+
+// ============================================================
+// RANGE EDITOR
+// ============================================================
+let editorState = {}; // comboName -> 'raise'|'call'|'fold'
+
+window.openRangeEditor = function () {
+    editorState = Object.assign({}, state.rangeEditorData);
+    renderEditorGrid();
+    document.getElementById('range-editor-modal').classList.remove('hidden');
+    // populate saved ranges dropdown
+    refreshRangeDropdown();
+};
+window.closeRangeEditor = function () {
+    document.getElementById('range-editor-modal').classList.add('hidden');
+};
+
+function renderEditorGrid() {
+    const grid = document.getElementById('range-editor-grid');
+    if (!grid) return;
+    let html = '';
     for (let r1 of CHART_RANKS) {
         for (let r2 of CHART_RANKS) {
-            let i1 = CHART_RANKS.indexOf(r1);
-            let i2 = CHART_RANKS.indexOf(r2);
+            const i1 = CHART_RANKS.indexOf(r1), i2 = CHART_RANKS.indexOf(r2);
+            const isPair = i1 === i2;
+            const isSuited = i2 > i1;
+            const high = i1 <= i2 ? r1 : r2, low = i1 <= i2 ? r2 : r1;
+            const name = isPair ? `${high}${low}` : `${high}${low}${isSuited ? 's' : 'o'}`;
+            const state_ = editorState[name] || 'fold';
+            html += `<div class="chart-cell editor-cell ${state_}" data-combo="${name}" onclick="toggleEditorCell('${name}')">${name}</div>`;
+        }
+    }
+    grid.innerHTML = html;
+}
 
-            let isSuited = i2 > i1; // upper right is suited (j > i means r2 lower mathematically in rank but index is bigger)
-            let isPair = i1 === i2;
-            let high = i1 <= i2 ? r1 : r2;
-            let low = i1 <= i2 ? r2 : r1;
+window.toggleEditorCell = function (name) {
+    const cur = editorState[name] || 'fold';
+    const cycle = { fold: 'raise', raise: 'call', call: 'fold' };
+    editorState[name] = cycle[cur];
+    const el = document.querySelector(`.editor-cell[data-combo="${name}"]`);
+    if (el) { el.className = `chart-cell editor-cell ${editorState[name]}`; }
+};
 
-            let cellName = isPair ? `${high}${low}` : `${high}${low}${isSuited ? 's' : 'o'}`;
-            let isRaise = range.has(cellName);
-            let currentCombo = state.currentHand ? getComboName(state.currentHand) : null;
-            let isCurrent = currentCombo === cellName;
+window.clearEditorGrid = function () {
+    editorState = {};
+    renderEditorGrid();
+};
 
-            let bgClass = isRaise ? 'raise' : 'fold';
-            let hlClass = isCurrent ? 'highlight' : '';
+window.saveCustomRange = function () {
+    const name = (document.getElementById('range-name-input').value || '').trim();
+    if (!name) { showToast('Please enter a range name.', 'error'); return; }
+    const raise = Object.keys(editorState).filter(k => editorState[k] === 'raise');
+    const call = Object.keys(editorState).filter(k => editorState[k] === 'call');
+    state.customRanges[name] = { raise, call };
+    state.rangeEditorData = { ...editorState };
+    saveToStorage();
+    refreshRangeDropdown();
+    showToast(`Range "${name}" saved!`, 'success');
+};
 
-            gridHTML += `<div class="chart-cell ${bgClass} ${hlClass}">${cellName}</div>`;
+window.loadCustomRange = function () {
+    const sel = document.getElementById('range-load-select');
+    const name = sel ? sel.value : '';
+    if (!name || !state.customRanges[name]) return;
+    editorState = {};
+    state.customRanges[name].raise.forEach(c => editorState[c] = 'raise');
+    state.customRanges[name].call.forEach(c => editorState[c] = 'call');
+    renderEditorGrid();
+};
+
+window.deleteCustomRange = function () {
+    const sel = document.getElementById('range-load-select');
+    const name = sel ? sel.value : '';
+    if (!name || !state.customRanges[name]) return;
+    delete state.customRanges[name];
+    saveToStorage();
+    refreshRangeDropdown();
+};
+
+function refreshRangeDropdown() {
+    const sel = document.getElementById('range-load-select');
+    if (!sel) return;
+    const names = Object.keys(state.customRanges);
+    sel.innerHTML = names.length === 0
+        ? '<option value="">-- No saved ranges --</option>'
+        : names.map(n => `<option value="${n}">${n}</option>`).join('');
+}
+
+window.selectCustomRange = function (name) {
+    state.currentCustomRangeName = name;
+    document.querySelectorAll('#custom-range-picker-list .stack-btn').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-range') === name);
+    });
+    nextHand();
+};
+
+function refreshCustomPracticePicker() {
+    const container = document.getElementById('custom-range-picker-list');
+    if (!container) return;
+    const names = Object.keys(state.customRanges);
+    if (names.length === 0) {
+        container.innerHTML = '<span style="font-size:0.8rem; opacity:0.6;">No saved ranges.</span>';
+        return;
+    }
+    if (!state.currentCustomRangeName) state.currentCustomRangeName = names[0];
+    container.innerHTML = names.map(n => `
+        <button class="stack-btn ${state.currentCustomRangeName === n ? 'active' : ''}" 
+                data-range="${n}" onclick="selectCustomRange('${n}')">${n}</button>
+    `).join('');
+}
+
+window.exportRange = function () {
+    const sel = document.getElementById('range-load-select');
+    const name = sel ? sel.value : '';
+    if (!name || !state.customRanges[name]) { showToast('Select a range to export.', 'error'); return; }
+    const data = JSON.stringify({ name, ...state.customRanges[name] });
+    navigator.clipboard.writeText(data).then(() => {
+        showToast('Range data copied to clipboard!', 'success');
+    });
+};
+
+window.importRange = function () {
+    const raw = prompt('Paste range data (JSON):');
+    if (!raw) return;
+    try {
+        const data = JSON.parse(raw);
+        if (!data.name || !data.raise) throw new Error();
+        state.customRanges[data.name] = { raise: data.raise, call: data.call || [] };
+        saveToStorage();
+        refreshRangeDropdown();
+        showToast(`Range "${data.name}" imported!`, 'success');
+    } catch (e) {
+        showToast('Invalid range data.', 'error');
+    }
+};
+
+// ============================================================
+// CHART MODAL (all positions)
+// ============================================================
+window.renderChartGrid = function () {
+    const chartPos = state.chartPosition || 'UTG';
+    let range, range3Bet, rangeCall;
+    let titleHTML = '', legendHTML = '', gridHTML = '';
+
+    if (state.currentMode === 'RFI') {
+        range = RFI_RANGES[chartPos] || RFI_RANGES.UTG;
+        const posLabel = `${chartPos} RFI Open Range`;
+        titleHTML = `<div class="modal-header"><h2>${posLabel}</h2><button class="btn-close" onclick="toggleChartModal()">&times;</button></div>`;
+        legendHTML = `<div class="chart-legend"><div class="legend-item"><span class="color-box raise"></span>${I18N[state.lang].legendRaise}</div><div class="legend-item"><span class="color-box fold"></span>${I18N[state.lang].legendFold}</div></div>`;
+    } else if (state.currentMode === 'PUSH_FOLD') {
+        const pRanges = PUSH_RANGES_BY_STACK[state.currentStack] || PUSH_10BB;
+        range = pRanges[chartPos] || pRanges.UTG;
+        titleHTML = `<div class="modal-header"><h2>${chartPos} ${state.currentStack}bb Push Range</h2><button class="btn-close" onclick="toggleChartModal()">&times;</button></div>`;
+        legendHTML = `<div class="chart-legend"><div class="legend-item"><span class="color-box raise"></span>Push</div><div class="legend-item"><span class="color-box fold"></span>${I18N[state.lang].legendFold}</div></div>`;
+    } else if (state.currentMode === 'DEFEND') {
+        const sc = DEFEND_SCENARIOS[state.currentDefendScenario] || DEFEND_SCENARIOS.BTN_VS_CO;
+        range3Bet = sc.THREE_BET; rangeCall = sc.CALL || new Set();
+        titleHTML = `<div class="modal-header"><h2>${sc.hero} vs ${sc.villain} Defense</h2><button class="btn-close" onclick="toggleChartModal()">&times;</button></div>`;
+        legendHTML = `<div class="chart-legend"><div class="legend-item"><span class="color-box raise"></span>3-Bet</div><div class="legend-item" style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;background:#3182ce;border-radius:4px"></div>Call</div><div class="legend-item"><span class="color-box fold"></span>${I18N[state.lang].legendFold}</div></div>`;
+    }
+
+    const currentCombo = state.currentHand ? getComboName(state.currentHand) : null;
+    for (let r1 of CHART_RANKS) {
+        for (let r2 of CHART_RANKS) {
+            const i1 = CHART_RANKS.indexOf(r1), i2 = CHART_RANKS.indexOf(r2);
+            const isPair = i1 === i2, isSuited = i2 > i1;
+            const high = i1 <= i2 ? r1 : r2, low = i1 <= i2 ? r2 : r1;
+            const name = isPair ? `${high}${low}` : `${high}${low}${isSuited ? 's' : 'o'}`;
+            const isCurrent = name === currentCombo;
+            let bg;
+            if (state.currentMode === 'DEFEND') {
+                bg = range3Bet.has(name) ? 'raise' : (rangeCall.has(name) ? 'defend-call' : 'fold');
+            } else {
+                bg = range && range.has(name) ? 'raise' : 'fold';
+            }
+            gridHTML += `<div class="chart-cell ${bg}${isCurrent ? ' highlight' : ''}">${name}</div>`;
         }
     }
 
-    // Replace the inner contents of the modal with the dynamic title and grid
-    document.querySelector('#chart-modal .modal-content').innerHTML = titleHTML + `<div id="chart-grid" class="chart-grid">${gridHTML}</div>` + legendHTML;
+    // Position selector tabs for non-defend modes
+    let posSelector = '';
+    if (state.currentMode !== 'DEFEND') {
+        posSelector = `<div class="chart-pos-tabs">${['UTG', 'HJ', 'CO', 'BTN', 'SB'].map(p =>
+            `<button class="chart-pos-btn${p === chartPos ? ' active' : ''}" onclick="setChartPosition('${p}')">${p}</button>`
+        ).join('')}</div>`;
+    }
 
-    // Update the reference just in case it got overwritten
-    chartGridEl = document.getElementById('chart-grid');
+    const wrapper = document.querySelector('#chart-modal .modal-content');
+    wrapper.innerHTML = titleHTML + posSelector + `<div id="chart-grid" class="chart-grid">${gridHTML}</div>` + legendHTML;
+};
+
+window.setChartPosition = function (pos) {
+    state.chartPosition = pos;
+    renderChartGrid();
 };
 
 window.toggleChartModal = function () {
@@ -450,23 +841,78 @@ window.toggleChartModal = function () {
 };
 
 window.toggleInfoModal = function () {
-    if (infoModalEl.classList.contains('hidden')) {
-        infoModalEl.classList.remove('hidden');
-    } else {
-        infoModalEl.classList.add('hidden');
-    }
+    infoModalEl.classList.toggle('hidden');
 };
 
-// --- INIT ---
-document.addEventListener('DOMContentLoaded', () => {
-    // Apply initial language state translations
+// ============================================================
+// KEYBOARD SHORTCUTS
+// ============================================================
+document.addEventListener('keydown', function (e) {
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+
+    // Skip if any modal is open (except feedback)
+    const activeModals = document.querySelectorAll('.modal:not(.hidden)');
+    if (activeModals.length > 0) return;
+
+    if (!feedbackEl.classList.contains('hidden')) {
+        if (e.code === 'Space') { e.preventDefault(); nextHand(); }
+        return;
+    }
+    if (!state.currentHand) return;
+    const map = { KeyF: 'Fold', KeyC: 'Call', KeyR: 'Raise', KeyA: 'All-In' };
+    if (map[e.code]) { e.preventDefault(); handleAction(map[e.code]); }
+});
+
+// ============================================================
+// LANGUAGE TOGGLE
+// ============================================================
+window.toggleLanguage = function () {
+    state.lang = state.lang === 'en' ? 'zh-TW' : 'en';
+    document.getElementById('lang-toggle').innerText = state.lang === 'en' ? '繁' : 'EN';
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        if (I18N[state.lang][key]) {
-            el.innerHTML = I18N[state.lang][key];
+        if (I18N[state.lang][key]) el.innerHTML = I18N[state.lang][key];
+    });
+    changeMode(state.currentMode, true);
+    if (state.currentHand) updateScenarioUI();
+};
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Initialise element references
+    initElements();
+
+    // 2. Load state
+    loadFromStorage();
+
+    // 3. Apply static i18n
+    applyStaticI18n();
+
+    // 4. Start first hand
+    changeMode('RFI');
+
+    // 5. Update stats
+    if (lifetimeHandsEl) lifetimeHandsEl.innerText = state.stats.totalHands;
+
+    // 6. Restore accuracy HUD
+    if (accuracyHudEl && state.stats.totalHands > 0) {
+        const pct = Math.round((state.stats.totalCorrect / state.stats.totalHands) * 100);
+        accuracyHudEl.innerText = pct + '%';
+        accuracyHudEl.style.color = pct >= 70 ? 'var(--color-raise)' : pct >= 50 ? '#f6ad55' : 'var(--color-fold)';
+    }
+
+    // 7. Range dropdown init
+    refreshRangeDropdown();
+});
+
+function applyStaticI18n() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const langData = I18N[state.lang];
+        if (langData && typeof langData[key] === 'string') {
+            el.innerHTML = langData[key];
         }
     });
-
-    // This will format coach box and call startTurn()
-    changeMode('RFI');
-});
+}
