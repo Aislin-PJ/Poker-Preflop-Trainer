@@ -333,7 +333,7 @@ function evaluateDefend(hand) {
 // ============================================================
 let feedbackEl, feedbackTitleEl, feedbackMsgEl, feedbackIconEl, scoreEl, streakEl, lifetimeHandsEl;
 let holeCardsEl, heroPositionEl, scenarioTextEl, chartModalEl, infoModalEl;
-let coachContentEl, coachBadgeEl, btnCallEl, btnRaiseEl, btnAllInEl;
+let coachContentEl, coachBadgeEl, btnCallEl, btnRaiseEl, btnAllInEl, btnRangeEditorEl;
 let accuracyHudEl;
 
 function initElements() {
@@ -354,6 +354,7 @@ function initElements() {
     btnCallEl = document.getElementById('btn-call');
     btnRaiseEl = document.getElementById('btn-raise');
     btnAllInEl = document.getElementById('btn-allin');
+    btnRangeEditorEl = document.getElementById('btn-range-editor');
     accuracyHudEl = document.getElementById('accuracy-hud');
 }
 
@@ -434,6 +435,7 @@ window.handleAction = function (action) {
     // Record stats + adaptive weight
     recordStat(state.currentPosition, state.currentMode, isCorrect);
     updateComboWeight(combo, isCorrect);
+    if (lifetimeHandsEl) lifetimeHandsEl.innerText = state.stats.totalHands;
 
     // Hand history
     const entry = {
@@ -518,6 +520,15 @@ window.changeMode = function (newMode, preserveScore) {
         const customCtrl = document.getElementById('custom-mode-controls');
         if (customCtrl) customCtrl.classList.add('hidden');
     }
+
+    if (btnRangeEditorEl) {
+        if (newMode === 'CUSTOM') {
+            btnRangeEditorEl.classList.remove('hidden');
+        } else {
+            btnRangeEditorEl.classList.add('hidden');
+        }
+    }
+
     startTurn();
     renderHandHistory();
 };
