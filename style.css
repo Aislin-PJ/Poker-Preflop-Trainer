@@ -65,28 +65,70 @@ body.theme-custom {
 
 /* ===================== SPLASH SCREEN ===================== */
 @keyframes splashSpadeAppear {
-    0%   { opacity: 0; transform: scale(0.4) rotate(-15deg); }
-    40%  { opacity: 1; transform: scale(1.08) rotate(2deg); }
-    60%  { transform: scale(0.97) rotate(0deg); }
-    80%  { transform: scale(1.03) rotate(0deg); }
-    100% { opacity: 1; transform: scale(1) rotate(0deg); }
+    0% {
+        opacity: 0;
+        transform: scale(0.4) rotate(-15deg);
+    }
+
+    40% {
+        opacity: 1;
+        transform: scale(1.08) rotate(2deg);
+    }
+
+    60% {
+        transform: scale(0.97) rotate(0deg);
+    }
+
+    80% {
+        transform: scale(1.03) rotate(0deg);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
 }
 
 @keyframes splashWordAppear {
-    0%   { opacity: 0; letter-spacing: 0.6em; }
-    60%  { opacity: 1; letter-spacing: 0.12em; }
-    100% { opacity: 1; letter-spacing: 0.12em; }
+    0% {
+        opacity: 0;
+        letter-spacing: 0.6em;
+    }
+
+    60% {
+        opacity: 1;
+        letter-spacing: 0.12em;
+    }
+
+    100% {
+        opacity: 1;
+        letter-spacing: 0.12em;
+    }
 }
 
 @keyframes splashGlow {
-    0%   { text-shadow: 0 0 0px rgba(99,179,237,0); }
-    50%  { text-shadow: 0 0 40px rgba(99,179,237,0.8), 0 0 80px rgba(159,122,234,0.4); }
-    100% { text-shadow: 0 0 0px rgba(99,179,237,0); }
+    0% {
+        text-shadow: 0 0 0px rgba(99, 179, 237, 0);
+    }
+
+    50% {
+        text-shadow: 0 0 40px rgba(99, 179, 237, 0.8), 0 0 80px rgba(159, 122, 234, 0.4);
+    }
+
+    100% {
+        text-shadow: 0 0 0px rgba(99, 179, 237, 0);
+    }
 }
 
 @keyframes splashFadeOut {
-    0%   { opacity: 1; }
-    100% { opacity: 0; pointer-events: none; }
+    0% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        pointer-events: none;
+    }
 }
 
 .splash-screen {
@@ -163,7 +205,7 @@ body.theme-custom {
 /* ===================== APP CONTAINER ===================== */
 .app-container {
     width: 100%;
-    max-width: 1200px;
+    max-width: clamp(920px, 72vw, 1100px);
     min-height: 100vh;
     min-height: 100dvh;
     padding: 8px 12px 20px;
@@ -212,18 +254,20 @@ body.theme-custom {
     display: flex;
     justify-content: center;
     align-items: center;
+    min-width: 0;
 }
 
 .header-top-right {
-    flex: 1;
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: flex-end;
+    gap: 6px;
 }
 
 .header-row-bottom {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     width: 100%;
     gap: 4px;
@@ -299,6 +343,7 @@ body.theme-custom {
     display: flex;
     gap: 6px;
     flex: 1;
+    margin-left: auto;
     justify-content: flex-end;
 }
 
@@ -416,7 +461,7 @@ body.theme-custom {
 /* ===================== MAIN LAYOUT ===================== */
 .main-layout {
     display: flex;
-    gap: 16px;
+    gap: clamp(10px, 1.6vw, 16px);
     flex: 1;
 }
 
@@ -433,8 +478,8 @@ body.theme-custom {
 /* ===================== STRATEGY COACH ===================== */
 .strategy-coach {
     flex: 1;
-    min-width: 260px;
-    max-width: 340px;
+    min-width: 240px;
+    max-width: clamp(280px, 30vw, 360px);
     display: flex;
     flex-direction: column;
     padding: 16px;
@@ -1463,6 +1508,18 @@ body.theme-custom {
 }
 
 /* ===================== RESPONSIVE ===================== */
+@media (min-width: 1200px) {
+    .header-row-top {
+        max-width: 980px;
+        margin-inline: auto;
+    }
+
+    .header-row-bottom {
+        max-width: 860px;
+        margin-inline: auto;
+    }
+}
+
 @media (max-width: 900px) {
     .main-layout {
         flex-direction: column;
@@ -1511,17 +1568,19 @@ body.theme-custom {
     }
 
     .hud-stats {
-        width: 100%;
-        justify-content: space-between;
+        width: auto;
+        flex: 1 1 auto;
+        min-width: 0;
+        justify-content: flex-end;
         gap: 4px;
-        order: 10;
     }
 
     .stat-box.pill {
-        flex: 1;
-        min-width: 60px;
-        padding: 5px 6px;
-        gap: 5px;
+        flex: 1 1 0;
+        min-width: 0;
+        flex-shrink: 1;
+        padding: 5px 8px;
+        gap: 6px;
     }
 
     .stat-icon {
@@ -1529,7 +1588,8 @@ body.theme-custom {
     }
 
     .stat-box .value {
-        font-size: 0.85rem;
+        font-size: 0.9rem;
+        white-space: nowrap;
     }
 
     .stat-box .label {
@@ -1576,6 +1636,51 @@ body.theme-custom {
         flex: 1;
         max-width: none;
         min-width: 160px;
+    }
+}
+
+@media (max-width: 520px) {
+    .header-row-bottom {
+        flex-wrap: nowrap;
+        gap: 4px;
+    }
+
+    .header-tools {
+        gap: 4px;
+    }
+
+    .btn-icon {
+        min-width: 32px;
+        min-height: 32px;
+        padding: 6px;
+    }
+
+    .hud-stats {
+        gap: 3px;
+    }
+
+    .stat-box.pill {
+        padding: 4px 7px;
+        gap: 5px;
+        overflow: hidden;
+    }
+
+    .stat-box .label {
+        display: none;
+    }
+
+    .stat-info {
+        min-width: 0;
+    }
+
+    .stat-icon {
+        font-size: 0.88rem;
+    }
+
+    .stat-box .value {
+        font-size: 0.88rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 }
 

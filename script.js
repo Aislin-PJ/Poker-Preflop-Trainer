@@ -428,7 +428,7 @@ window.handleAction = function (action) {
     }
 
     feedbackMsgEl.innerHTML = `${I18N[state.lang].feedbackDetail(action, state.correctAction)}<br><br>${state.explanation}`;
-    scoreEl.innerText = state.score;
+    if (scoreEl) scoreEl.innerText = state.score;
     streakEl.innerText = state.streak;
     feedbackEl.classList.remove('hidden');
 
@@ -466,7 +466,8 @@ window.changeMode = function (newMode, preserveScore) {
     state.currentMode = newMode;
     if (!preserveScore) {
         state.score = 0; state.streak = 0;
-        scoreEl.innerText = '0'; streakEl.innerText = '0';
+        if (scoreEl) scoreEl.innerText = '0';
+        streakEl.innerText = '0';
     }
     document.body.className = '';
     const t = I18N[state.lang];
