@@ -53,6 +53,14 @@
                     </select>
                 </div>
                 <div class="header-top-right">
+                    <button class="btn-icon" onclick="toggleInfoModal()" title="Poker Rules &amp; Info">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="16" x2="12" y2="12" />
+                            <line x1="12" y1="8" x2="12.01" y2="8" />
+                        </svg>
+                    </button>
                     <button class="btn-icon lang-toggle-btn" onclick="toggleLanguage()" id="lang-toggle"
                         style="font-weight:bold; width: 44px;">繁</button>
                 </div>
@@ -60,14 +68,6 @@
 
             <div class="header-row-bottom">
                 <div class="header-tools">
-                    <button class="btn-icon" onclick="toggleInfoModal()" title="Poker Rules & Info">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="12" y1="16" x2="12" y2="12" />
-                            <line x1="12" y1="8" x2="12.01" y2="8" />
-                        </svg>
-                    </button>
                     <button class="btn-icon" onclick="toggleChartModal()" title="View Range Chart">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -99,13 +99,6 @@
                     </button>
                 </div>
                 <div class="stats hud-stats">
-                    <div class="stat-box pill">
-                        <span class="stat-icon pulse-blue">🎯</span>
-                        <div class="stat-info">
-                            <span class="label" data-i18n="score">Score</span>
-                            <span class="value" id="score">0</span>
-                        </div>
-                    </div>
                     <div class="stat-box pill">
                         <span class="stat-icon pulse-orange">🔥</span>
                         <div class="stat-info">
