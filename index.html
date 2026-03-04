@@ -7,20 +7,21 @@
     <meta name="theme-color" content="#0b1121">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="PokerTrainer">
-    <link rel="apple-touch-icon" href="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/2660.svg">
+    <meta name="apple-mobile-web-app-title" content="Preflop">
+    <link rel="apple-touch-icon" href="logo.png">
     <link rel="manifest" href="manifest.json">
-    <title>Poker Preflop Trainer — Free iOS App for Improving Preflop Strategy</title>
+    <title>Preflop — Poker Preflop Strategy Trainer</title>
     <meta name="description"
-        content="A free, premium Poker Preflop Trainer with RFI, Push/Fold, and Defense modes. Train with adaptive difficulty, track your stats, and install as a native iOS app.">
-    <meta name="keywords" content="poker trainer, preflop, RFI, push fold, GTO, range chart, strategy, poker study app">
+        content="Preflop: a free, premium poker preflop trainer with RFI, Push/Fold, and Defense modes. Adaptive difficulty, range editor, and offline-first PWA support.">
+    <meta name="keywords"
+        content="preflop, poker trainer, RFI, push fold, GTO, range chart, preflop strategy, poker study app">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Poker Preflop Trainer">
+    <meta property="og:title" content="Preflop — Poker Preflop Trainer">
     <meta property="og:description"
         content="Master poker preflop strategy with adaptive difficulty and range editor. Free, offline-first PWA.">
-    <meta property="og:image" content="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/2660.svg">
+    <meta property="og:image" content="logo.png">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Poker Preflop Trainer">
+    <meta name="twitter:title" content="Preflop — Poker Preflop Trainer">
     <meta name="twitter:description"
         content="Master poker preflop strategy with adaptive difficulty and range editor. Free, offline-first PWA.">
     <link rel="stylesheet" href="style.css">
@@ -32,8 +33,35 @@
     <!-- ===================== SPLASH SCREEN ===================== -->
     <div id="splash-screen" class="splash-screen">
         <div class="splash-logo">
-            <div class="splash-spade">♠</div>
-            <div class="splash-wordmark">POKER<span>TRAINER</span></div>
+            <!-- Inline SVG chip — truly transparent, no PNG background issues -->
+            <svg class="splash-chip-img" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <!-- Shadow -->
+                <ellipse cx="50" cy="96" rx="28" ry="4" fill="rgba(0,0,0,0.35)" />
+                <!-- Outer ring -->
+                <circle cx="50" cy="50" r="46" fill="#c8cdd6" />
+                <!-- Notch slots (12 evenly spaced) -->
+                <g fill="#1e2d45">
+                    <rect x="46" y="4" width="8" height="14" rx="2" transform="rotate(0   50 50)" />
+                    <rect x="46" y="4" width="8" height="14" rx="2" transform="rotate(30  50 50)" />
+                    <rect x="46" y="4" width="8" height="14" rx="2" transform="rotate(60  50 50)" />
+                    <rect x="46" y="4" width="8" height="14" rx="2" transform="rotate(90  50 50)" />
+                    <rect x="46" y="4" width="8" height="14" rx="2" transform="rotate(120 50 50)" />
+                    <rect x="46" y="4" width="8" height="14" rx="2" transform="rotate(150 50 50)" />
+                    <rect x="46" y="4" width="8" height="14" rx="2" transform="rotate(180 50 50)" />
+                    <rect x="46" y="4" width="8" height="14" rx="2" transform="rotate(210 50 50)" />
+                    <rect x="46" y="4" width="8" height="14" rx="2" transform="rotate(240 50 50)" />
+                    <rect x="46" y="4" width="8" height="14" rx="2" transform="rotate(270 50 50)" />
+                    <rect x="46" y="4" width="8" height="14" rx="2" transform="rotate(300 50 50)" />
+                    <rect x="46" y="4" width="8" height="14" rx="2" transform="rotate(330 50 50)" />
+                </g>
+                <!-- Inner ring & center -->
+                <circle cx="50" cy="50" r="32" fill="#8a9ab5" />
+                <circle cx="50" cy="50" r="24" fill="#4a5e7a" />
+                <circle cx="50" cy="50" r="18" fill="#3b4f68" />
+                <!-- Specular highlight -->
+                <ellipse cx="44" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.15)" transform="rotate(-30 44 38)" />
+            </svg>
+            <div class="splash-wordmark">Pre<span>flop</span></div>
         </div>
     </div>
 
