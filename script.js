@@ -653,6 +653,121 @@ if ('serviceWorker' in navigator) {
 // ============================================================
 let editorState = {}; // comboName -> 'raise'|'call'|'fold'
 
+// ============================================================
+// RANGE CODE (offline export/import, lossless)
+// - 169 cells, each in {fold, raise, call}
+// - Pack 5 trits (base-3 digits) into 1 byte since 3^5 = 243 < 256
+// - Append CRC16-CCITT to detect typos
+// - Encode bytes as Base64URL without padding
+// ============================================================
+const RANGE_CODE_PREFIX = 'PT1.'; // versioned prefix, safe for copy/paste
+const RANGE_CELL_COUNT = CHART_RANKS.length * CHART_RANKS.length; // 169
+const TRITS_PER_BYTE = 5;
+const TRIT_POW3 = [1, 3, 9, 27, 81]; // 3^0..3^4
+const RANGE_STATES = /** @type {const} */ ({ fold: 0, raise: 1, call: 2 });
+const RANGE_STATES_REV = /** @type {const} */ (['fold', 'raise', 'call']);
+
+function crc16Ccitt(bytes) {
+    let crc = 0xffff;
+    for (let i = 0; i < bytes.length; i++) {
+        crc ^= (bytes[i] & 0xff) << 8;
+        for (let b = 0; b < 8; b++) {
+            crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+            crc &= 0xffff;
+        }
+    }
+    return crc & 0xffff;
+}
+
+function base64UrlEncode(bytes) {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    const b64 = btoa(binary);
+    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function base64UrlDecodeToBytes(str) {
+    const padded = str.replace(/-/g, '+').replace(/_/g, '/')
+        + '==='.slice((str.length + 3) % 4);
+    const binary = atob(padded);
+    const out = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i) & 0xff;
+    return out;
+}
+
+function getRangeCellOrder() {
+    // Must match renderEditorGrid() order for stable encoding across devices.
+    const names = [];
+    for (let r1 of CHART_RANKS) {
+        for (let r2 of CHART_RANKS) {
+            const i1 = CHART_RANKS.indexOf(r1), i2 = CHART_RANKS.indexOf(r2);
+            const isPair = i1 === i2;
+            const isSuited = i2 > i1;
+            const high = i1 <= i2 ? r1 : r2, low = i1 <= i2 ? r2 : r1;
+            const name = isPair ? `${high}${low}` : `${high}${low}${isSuited ? 's' : 'o'}`;
+            names.push(name);
+        }
+    }
+    return names;
+}
+const RANGE_CELL_ORDER = getRangeCellOrder();
+
+function encodeEditorStateToRangeCode(es) {
+    const trits = new Array(RANGE_CELL_COUNT);
+    for (let i = 0; i < RANGE_CELL_COUNT; i++) {
+        const name = RANGE_CELL_ORDER[i];
+        const st = es[name] || 'fold';
+        trits[i] = RANGE_STATES[st] ?? 0;
+    }
+
+    const byteCount = Math.ceil(RANGE_CELL_COUNT / TRITS_PER_BYTE);
+    const packed = new Uint8Array(byteCount + 2); // + CRC16
+    let t = 0;
+    for (let bi = 0; bi < byteCount; bi++) {
+        let val = 0;
+        for (let k = 0; k < TRITS_PER_BYTE; k++) {
+            const trit = (t < trits.length) ? trits[t] : 0;
+            val += trit * TRIT_POW3[k];
+            t++;
+        }
+        packed[bi] = val & 0xff;
+    }
+    const crc = crc16Ccitt(packed.slice(0, byteCount));
+    packed[byteCount] = (crc >> 8) & 0xff;
+    packed[byteCount + 1] = crc & 0xff;
+
+    return RANGE_CODE_PREFIX + base64UrlEncode(packed);
+}
+
+function decodeRangeCodeToEditorState(code) {
+    if (typeof code !== 'string') throw new Error('invalid');
+    if (!code.startsWith(RANGE_CODE_PREFIX)) throw new Error('prefix');
+    const raw = code.slice(RANGE_CODE_PREFIX.length).trim();
+    const bytes = base64UrlDecodeToBytes(raw);
+    const expectedPackedBytes = Math.ceil(RANGE_CELL_COUNT / TRITS_PER_BYTE);
+    if (bytes.length !== expectedPackedBytes + 2) throw new Error('length');
+
+    const data = bytes.slice(0, expectedPackedBytes);
+    const gotCrc = ((bytes[expectedPackedBytes] & 0xff) << 8) | (bytes[expectedPackedBytes + 1] & 0xff);
+    const wantCrc = crc16Ccitt(data);
+    if (gotCrc !== wantCrc) throw new Error('crc');
+
+    const es = {};
+    let cellIdx = 0;
+    for (let bi = 0; bi < data.length; bi++) {
+        let v = data[bi];
+        for (let k = 0; k < TRITS_PER_BYTE; k++) {
+            if (cellIdx >= RANGE_CELL_COUNT) break;
+            const trit = v % 3;
+            v = Math.floor(v / 3);
+            const st = RANGE_STATES_REV[trit] || 'fold';
+            if (st !== 'fold') es[RANGE_CELL_ORDER[cellIdx]] = st;
+            cellIdx++;
+        }
+    }
+    return es;
+}
+
 window.openRangeEditor = function () {
     editorState = Object.assign({}, state.rangeEditorData);
     renderEditorGrid();
@@ -762,24 +877,54 @@ window.exportRange = function () {
     const sel = document.getElementById('range-load-select');
     const name = sel ? sel.value : '';
     if (!name || !state.customRanges[name]) { showToast('Select a range to export.', 'error'); return; }
-    const data = JSON.stringify({ name, ...state.customRanges[name] });
-    navigator.clipboard.writeText(data).then(() => {
-        showToast('Range data copied to clipboard!', 'success');
+    // Prefer compact offline "Range Code" over verbose JSON.
+    // The code represents the *current editor grid* (raise/call/fold for all 169 cells).
+    // This is lossless and does not require any online service to decode.
+    const code = encodeEditorStateToRangeCode(editorState);
+    navigator.clipboard.writeText(code).then(() => {
+        showToast('Range code copied to clipboard!', 'success');
+    }).catch(() => {
+        // Fallback to JSON if clipboard write fails (older browsers / permissions).
+        const data = JSON.stringify({ name, ...state.customRanges[name] });
+        prompt('Copy range JSON:', data);
     });
 };
 
 window.importRange = function () {
-    const raw = prompt('Paste range data (JSON):');
+    const raw = prompt('Paste range code (PT1.…) or legacy JSON:');
     if (!raw) return;
     try {
-        const data = JSON.parse(raw);
-        if (!data.name || !data.raise) throw new Error();
+        const trimmed = raw.trim();
+
+        // New format: PT1.<base64url>
+        if (trimmed.startsWith(RANGE_CODE_PREFIX)) {
+            const es = decodeRangeCodeToEditorState(trimmed);
+            // Apply to editor immediately
+            editorState = es;
+            state.rangeEditorData = { ...editorState };
+            renderEditorGrid();
+
+            // Optionally save as a named custom range
+            const defaultName = 'Imported Range';
+            const name = (prompt('Name this imported range:', defaultName) || defaultName).trim();
+            const raise = Object.keys(editorState).filter(k => editorState[k] === 'raise');
+            const call = Object.keys(editorState).filter(k => editorState[k] === 'call');
+            state.customRanges[name] = { raise, call };
+            saveToStorage();
+            refreshRangeDropdown();
+            showToast(`Range "${name}" imported!`, 'success');
+            return;
+        }
+
+        // Legacy: JSON payload { name, raise: [...], call?: [...] }
+        const data = JSON.parse(trimmed);
+        if (!data.name || !data.raise) throw new Error('json');
         state.customRanges[data.name] = { raise: data.raise, call: data.call || [] };
         saveToStorage();
         refreshRangeDropdown();
         showToast(`Range "${data.name}" imported!`, 'success');
     } catch (e) {
-        showToast('Invalid range data.', 'error');
+        showToast('Invalid range code / data.', 'error');
     }
 };
 
